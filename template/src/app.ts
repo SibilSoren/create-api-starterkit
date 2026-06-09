@@ -1,0 +1,51 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
+import { env } from './config/env.js';
+import { swaggerSpec } from './config/swagger.js';
+import { requestLogger } from './middlewares/request-logger.js';
+import { notFoundHandler } from './middlewares/not-found.js';
+import { errorHandler } from './middlewares/error-handler.js';
+import { healthRoutes } from './modules/health/health.routes.js';
+
+/**
+ * Creates and configures the Express application.
+ * Separated from server.ts to allow testing without starting the HTTP server.
+ */
+export function createApp(): express.Application {
+  const app = express();
+
+  // ─── Security ─────────────────────────────────────────────
+  app.use(helmet());
+  app.use(
+    cors({
+      origin: env.CORS_ORIGIN,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    }),
+  );
+
+  // ─── Body Parsing ─────────────────────────────────────────
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true }));
+
+  // ─── Request Logging ──────────────────────────────────────
+  app.use(requestLogger);
+
+  // ─── API Documentation ────────────────────────────────────
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  // ─── Routes ───────────────────────────────────────────────
+  app.use('/api/health', healthRoutes);
+
+  // ─── Add your routes here ─────────────────────────────────
+  // app.use('/api/users', userRoutes);
+  // app.use('/api/posts', postRoutes);
+
+  // ─── Error Handling ───────────────────────────────────────
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  return app;
+}
