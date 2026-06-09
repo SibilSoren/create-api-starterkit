@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>create-api-starterkit — Scaffold Production-Ready APIs in Seconds</title>
+  <meta name="description" content="One command to scaffold a production-ready Node.js + TypeScript + Express API. Zero config. Zero prompts. Just works." />
+  <meta name="keywords" content="nodejs, typescript, express, api, scaffolding, cli, boilerplate, starter, template" />
+  <meta name="author" content="SibilSoren" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="create-api-starterkit" />
+  <meta property="og:description" content="Scaffold production-ready Node.js + TypeScript + Express APIs with a single command." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sibilsoren.github.io/create-api-starterkit/" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Nav -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <span class="nav-logo-icon">⚡</span>
+        <span class="nav-logo-text">create-api-starterkit</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#quickstart">Quick Start</a>
+        <a href="#structure">Structure</a>
+        <a href="https://github.com/SibilSoren/create-api-starterkit" target="_blank" rel="noopener" class="nav-github">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <div class="hero-badge animate-in">
+        <span class="badge-dot"></span>
+        Open Source · MIT License
+      </div>
+      <h1 class="hero-title animate-in delay-1">
+        Scaffold production-ready APIs<br />
+        <span class="hero-gradient">in seconds.</span>
+      </h1>
+      <p class="hero-subtitle animate-in delay-2">
+        One command. Zero prompts. Zero config.<br />
+        A fully configured Node.js + TypeScript + Express API — ready to build on.
+      </p>
+      <div class="hero-terminal animate-in delay-3">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <span class="terminal-title">Terminal</span>
+          <button class="terminal-copy" id="copy-btn" title="Copy command">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <div class="terminal-body">
+          <span class="terminal-prompt">$</span>
+          <span class="terminal-command" id="command-text">npx create-api-starterkit my-api</span>
+          <div class="terminal-cursor"></div>
+        </div>
+      </div>
+      <div class="hero-actions animate-in delay-4">
+        <a href="#quickstart" class="btn btn-primary">Get Started</a>
+        <a href="https://github.com/SibilSoren/create-api-starterkit" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- What You Get -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">What You Get</span>
+        <h2 class="section-title">Everything you need.<br />Nothing you don't.</h2>
+        <p class="section-subtitle">
+          A production-ready API with industry best practices baked in — so you can focus on building features.
+        </p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #3b82f6;">⚡</div>
+          <h3>Express 5</h3>
+          <p>Latest stable framework with async error handling and modern routing built in.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #8b5cf6;">🔒</div>
+          <h3>TypeScript Strict</h3>
+          <p>Full type safety with strict mode enabled. Catch bugs at compile time, not runtime.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #06b6d4;">✅</div>
+          <h3>Zod Validation</h3>
+          <p>Runtime request validation with Zod schemas. Type-safe from API boundary to response.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #10b981;">📚</div>
+          <h3>Swagger Docs</h3>
+          <p>Interactive API documentation at <code>/api-docs</code> — auto-generated from JSDoc annotations.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #f59e0b;">🧪</div>
+          <h3>Vitest + Supertest</h3>
+          <p>Fast testing out of the box. Example integration tests show you the pattern.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #ef4444;">🛡️</div>
+          <h3>Security First</h3>
+          <p>Helmet for HTTP headers, CORS configured, environment validation with Zod.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #ec4899;">📝</div>
+          <h3>Pino Logging</h3>
+          <p>Structured, high-performance logging. Pretty output in dev, JSON in production.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #14b8a6;">🐳</div>
+          <h3>Docker Ready</h3>
+          <p>Multi-stage Dockerfile + docker-compose. Deploy anywhere with a single build.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="--accent: #a855f7;">🎨</div>
+          <h3>Lint + Format</h3>
+          <p>ESLint flat config + Prettier + Husky git hooks. Clean code enforced automatically.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="section section-dark" id="quickstart">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Quick Start</span>
+        <h2 class="section-title">Up and running in 30 seconds.</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Create your project</h3>
+            <div class="code-block">
+              <code>npx create-api-starterkit my-api</code>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Start developing</h3>
+            <div class="code-block">
+              <code>cd my-api && npm run dev</code>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>You're live!</h3>
+            <div class="endpoints">
+              <div class="endpoint">
+                <span class="endpoint-label">Server</span>
+                <span class="endpoint-url">http://localhost:3000</span>
+              </div>
+              <div class="endpoint">
+                <span class="endpoint-label">Swagger</span>
+                <span class="endpoint-url">http://localhost:3000/api-docs</span>
+              </div>
+              <div class="endpoint">
+                <span class="endpoint-label">Health</span>
+                <span class="endpoint-url">http://localhost:3000/api/health</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cli-options">
+        <h3>CLI Options</h3>
+        <div class="options-table">
+          <div class="option-row">
+            <code>--skip-install</code>
+            <span>Skip dependency installation</span>
+          </div>
+          <div class="option-row">
+            <code>--no-git</code>
+            <span>Skip git initialization</span>
+          </div>
+          <div class="option-row">
+            <code>--package-manager pnpm</code>
+            <span>Use pnpm instead of npm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project Structure -->
+  <section class="section" id="structure">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Architecture</span>
+        <h2 class="section-title">Module-based. Scalable by design.</h2>
+        <p class="section-subtitle">
+          Each feature is self-contained. No more hunting across scattered folders.
+        </p>
+      </div>
+      <div class="structure-layout">
+        <div class="structure-code">
+          <div class="code-window">
+            <div class="code-window-header">
+              <div class="terminal-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="code-window-title">Project Structure</span>
+            </div>
+            <pre class="code-window-body"><span class="folder">src/</span>
+├── <span class="folder">config/</span>
+│   ├── <span class="file">env.ts</span>           <span class="comment"># Zod-validated env vars</span>
+│   └── <span class="file">swagger.ts</span>       <span class="comment"># OpenAPI configuration</span>
+├── <span class="folder">middlewares/</span>
+│   ├── <span class="file">error-handler.ts</span> <span class="comment"># Global error handling</span>
+│   ├── <span class="file">not-found.ts</span>     <span class="comment"># 404 handler</span>
+│   ├── <span class="file">request-logger.ts</span><span class="comment"># HTTP logging</span>
+│   └── <span class="file">validate.ts</span>      <span class="comment"># Zod validation</span>
+├── <span class="folder highlight">modules/</span>          <span class="comment"># ← Add features here</span>
+│   └── <span class="folder">health/</span>
+│       ├── <span class="file">health.controller.ts</span>
+│       ├── <span class="file">health.routes.ts</span>
+│       └── <span class="file">health.schema.ts</span>
+├── <span class="folder">utils/</span>
+│   ├── <span class="file">api-error.ts</span>     <span class="comment"># Custom error class</span>
+│   ├── <span class="file">api-response.ts</span>  <span class="comment"># Standardized responses</span>
+│   └── <span class="file">logger.ts</span>        <span class="comment"># Pino logger</span>
+├── <span class="file">app.ts</span>              <span class="comment"># Express app factory</span>
+└── <span class="file">server.ts</span>           <span class="comment"># Entry point</span></pre>
+          </div>
+        </div>
+        <div class="structure-info">
+          <div class="info-card">
+            <h4>🧩 Add a new module in 3 steps</h4>
+            <ol>
+              <li>Create <code>src/modules/users/</code></li>
+              <li>Add schema, controller, and routes</li>
+              <li>Register in <code>app.ts</code></li>
+            </ol>
+          </div>
+          <div class="info-card">
+            <h4>📐 Consistent API responses</h4>
+            <div class="code-block compact">
+              <code>{
+  "success": true,
+  "data": { ... },
+  "message": "OK",
+  "timestamp": "2026-..."
+}</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section section-cta">
+    <div class="container">
+      <div class="cta-content">
+        <h2>Ready to build?</h2>
+        <p>Stop configuring. Start shipping.</p>
+        <div class="code-block cta-code">
+          <code>npx create-api-starterkit my-api</code>
+        </div>
+        <div class="cta-links">
+          <a href="https://github.com/SibilSoren/create-api-starterkit" target="_blank" rel="noopener" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            Star on GitHub
+          </a>
+          <a href="https://github.com/SibilSoren/create-api-starterkit/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener" class="btn btn-secondary">Contribute</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <p>Built by <a href="https://github.com/SibilSoren" target="_blank" rel="noopener">SibilSoren</a></p>
+        <p>MIT License · Open Source</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Copy command
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      const text = document.getElementById('command-text').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+        setTimeout(() => {
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        }, 2000);
+      });
+    });
+
+    // Scroll animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.feature-card, .step, .info-card, .structure-code, .cli-options').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Nav background on scroll
+    window.addEventListener('scroll', () => {
+      document.getElementById('nav').classList.toggle('nav-scrolled', window.scrollY > 50);
+    });
+  </script>
+</body>
+</html>
