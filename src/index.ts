@@ -14,8 +14,25 @@ program
   .option('--skip-install', 'Skip npm install', false)
   .option('--no-git', 'Skip git initialization')
   .option('--package-manager <pm>', 'Package manager to use (npm, pnpm, yarn)')
+  .option('-y, --yes', 'Skip prompts and use defaults')
   .action(async (projectNameArg: string | undefined, opts: Record<string, unknown>) => {
     console.log();
+    
+    const isCI = process.env.CI || opts.yes;
+
+    if (isCI) {
+      const options: CreateOptions = {
+        projectName: projectNameArg || 'my-api',
+        skipInstall: opts.skipInstall as boolean,
+        noGit: !opts.git,
+        packageManager: (opts.packageManager as 'npm' | 'pnpm' | 'yarn') || 'npm',
+        includeGatekeeper: false,
+        includePrisma: false,
+      };
+      await createProject(options);
+      return;
+    }
+
     p.intro(chalk.bgCyan.black(' create-api-starterkit '));
 
     const project = await p.group(
@@ -63,12 +80,12 @@ program
     );
 
     const options: CreateOptions = {
-      projectName: project.projectName,
+      projectName: project.projectName as string,
       skipInstall: opts.skipInstall as boolean,
       noGit: !opts.git,
       packageManager: project.packageManager as 'npm' | 'pnpm' | 'yarn',
-      includeGatekeeper: project.includeGatekeeper,
-      includePrisma: project.includePrisma,
+      includeGatekeeper: project.includeGatekeeper as boolean,
+      includePrisma: project.includePrisma as boolean,
     };
 
     await createProject(options);
