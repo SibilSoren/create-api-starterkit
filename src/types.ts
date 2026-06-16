@@ -6,5 +6,9 @@ export interface CreateOptions {
   /** Skip git init */
   noGit: boolean;
   /** Package manager to use */
-  packageManager: 'npm' | 'pnpm';
+  packageManager: 'npm' | 'pnpm' | 'yarn';
+  /** Include Gatekeeper rate limiter */
+  includeGatekeeper: boolean;
+  /** Include Prisma ORM */
+  includePrisma: boolean;
 }

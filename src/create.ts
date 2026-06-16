@@ -64,6 +64,47 @@ export async function createProject(options: CreateOptions): Promise<void> {
   };
 
   copyTemplateDir(resolvedTemplateDir, targetDir, replacements);
+  
+  // ─── Step 1.5: Dynamic Configuration ────────────────────
+  const packageJsonPath = path.join(targetDir, 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    
+    if (options.includeGatekeeper) {
+      pkg.dependencies = pkg.dependencies || {};
+      pkg.dependencies['@sibilsoren/gatekeeper'] = '^1.0.0';
+    }
+    
+    if (options.includePrisma) {
+      pkg.dependencies = pkg.dependencies || {};
+      pkg.devDependencies = pkg.devDependencies || {};
+      pkg.dependencies['@prisma/client'] = '^5.10.0';
+      pkg.devDependencies['prisma'] = '^5.10.0';
+      pkg.scripts = pkg.scripts || {};
+      pkg.scripts['db:push'] = 'npx prisma db push';
+      pkg.scripts['db:studio'] = 'npx prisma studio';
+    }
+    
+    fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
+  }
+
+  // Inject Gatekeeper into app.ts
+  if (options.includeGatekeeper) {
+    const appTsPath = path.join(targetDir, 'src', 'app.ts');
+    if (fs.existsSync(appTsPath)) {
+      let appTs = fs.readFileSync(appTsPath, 'utf-8');
+      appTs = appTs.replace(
+        "import { healthRoutes } from './modules/health/health.routes.js';",
+        "import { healthRoutes } from './modules/health/health.routes.js';\nimport gatekeeper from '@sibilsoren/gatekeeper';"
+      );
+      appTs = appTs.replace(
+        "// ─── Request Logging ──────────────────────────────────────\n  app.use(requestLogger);",
+        "// ─── Request Logging ──────────────────────────────────────\n  app.use(requestLogger);\n\n  // ─── Rate Limiting ────────────────────────────────────────\n  app.use(gatekeeper({ limit: 100, window: 60 }));"
+      );
+      fs.writeFileSync(appTsPath, appTs);
+    }
+  }
+
   log.success('Project scaffolded');
 
   // ─── Step 2: Create .env from .env.example ──────────────
@@ -100,7 +141,7 @@ export async function createProject(options: CreateOptions): Promise<void> {
   if (!skipInstall) {
     currentStep++;
     const installCmd =
-      packageManager === 'pnpm' ? 'pnpm install' : 'npm install';
+      packageManager === 'pnpm' ? 'pnpm install' : packageManager === 'yarn' ? 'yarn install' : 'npm install';
     const spinner = ora({
       text: `Installing dependencies with ${packageManager}...`,
       prefixText: chalk.blue(`[${currentStep}/${totalSteps}]`),
@@ -116,6 +157,17 @@ export async function createProject(options: CreateOptions): Promise<void> {
     } catch {
       spinner.fail('Failed to install dependencies');
       log.warning(`Run "${installCmd}" manually in the project directory.`);
+    }
+
+    if (options.includePrisma) {
+      log.step(++currentStep, totalSteps + 1, 'Initializing Prisma...');
+      try {
+        const prismaCmd = packageManager === 'pnpm' ? 'pnpm dlx prisma init' : packageManager === 'yarn' ? 'yarn dlx prisma init' : 'npx prisma init';
+        execSync(prismaCmd, { cwd: targetDir, stdio: 'ignore' });
+        log.success('Prisma initialized');
+      } catch {
+        log.warning('Failed to initialize Prisma. Run "npx prisma init" manually.');
+      }
     }
   }
 
