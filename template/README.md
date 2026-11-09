@@ -27,6 +27,7 @@ The server will start at `http://localhost:3000`.
 |---|---|
 | `npm run dev` | Start development server with hot reload |
 | `npm run build` | Compile TypeScript to JavaScript |
+| `npm run typecheck` | Type-check without building |
 | `npm start` | Run production build |
 | `npm test` | Run tests |
 | `npm run test:watch` | Run tests in watch mode |
@@ -34,6 +35,9 @@ The server will start at `http://localhost:3000`.
 | `npm run lint` | Run ESLint |
 | `npm run lint:fix` | Fix ESLint issues |
 | `npm run format` | Format code with Prettier |
+| `npm run format:check` | Check formatting without changing files |
+
+A pre-commit hook (husky + lint-staged) runs ESLint and Prettier on the files you commit.
 
 ## Project Structure
 
@@ -89,7 +93,7 @@ Copy `.env.example` to `.env` and configure:
 | `PORT` | `3000` | Server port |
 | `HOST` | `0.0.0.0` | Server host |
 | `LOG_LEVEL` | `info` | Pino log level |
-| `CORS_ORIGIN` | `*` | Allowed CORS origins |
+| `CORS_ORIGIN` | `*` | Allowed origins: `*` or a comma-separated list. Set it in production. |
 
 ## Docker
 
@@ -104,7 +108,7 @@ docker run -p 3000:3000 {{PROJECT_NAME}}
 
 ## Tech Stack
 
-- **Runtime**: Node.js 20+
+- **Runtime**: Node.js 22.12+
 - **Language**: TypeScript (strict mode)
 - **Framework**: Express 5
 - **Validation**: Zod

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../../../src/app.js';
 
@@ -33,6 +33,27 @@ describe('GET /api/health', () => {
     expect(response.body).toHaveProperty('data');
     expect(response.body).toHaveProperty('message');
     expect(response.body).toHaveProperty('timestamp');
+  });
+});
+
+describe('GET /api/health in production', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('leaves out memory usage and the environment', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.resetModules();
+    const { createApp: createProductionApp } =
+      await import('../../../src/app.js');
+
+    const response = await request(createProductionApp()).get('/api/health');
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.status).toBe('healthy');
+    expect(response.body.data).not.toHaveProperty('memoryUsage');
+    expect(response.body.data).not.toHaveProperty('environment');
   });
 });
 

@@ -10,7 +10,7 @@ const router = Router();
  *     tags:
  *       - Health
  *     summary: Health check endpoint
- *     description: Returns the current health status of the API including uptime, memory usage, and environment info.
+ *     description: Returns the current health status of the API including uptime and version. Outside production it also includes memory usage and the environment.
  *     responses:
  *       200:
  *         description: Service is healthy

@@ -6,11 +6,15 @@ const app = createApp();
 
 const server = app.listen(env.PORT, env.HOST, () => {
   logger.info(`🚀 Server running at http://${env.HOST}:${env.PORT}`);
-  logger.info(
-    `📚 API Docs available at http://localhost:${env.PORT}/api-docs`,
-  );
+  logger.info(`📚 API Docs available at http://localhost:${env.PORT}/api-docs`);
   logger.info(`🏥 Health check at http://localhost:${env.PORT}/api/health`);
   logger.info(`📦 Environment: ${env.NODE_ENV}`);
+
+  if (env.NODE_ENV === 'production' && env.CORS_ORIGIN === '*') {
+    logger.warn(
+      'CORS_ORIGIN is "*", so any website can call this API. Set it to your frontend URL(s).',
+    );
+  }
 });
 
 // ─── Graceful Shutdown ────────────────────────────────────────

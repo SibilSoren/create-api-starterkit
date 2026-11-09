@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import 'dotenv/config';
+
+// Load .env if there is one. Variables already set in the environment win,
+// and production usually has no .env file at all.
+try {
+  process.loadEnvFile();
+} catch {
+  // No .env file — use the environment as it is.
+}
 
 /**
  * Environment variable schema.
@@ -19,7 +26,13 @@ const envSchema = z.object({
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .default('info'),
 
-  CORS_ORIGIN: z.string().default('*'),
+  // "*" or a comma-separated list, e.g. "https://app.example.com,https://admin.example.com"
+  CORS_ORIGIN: z
+    .string()
+    .default('*')
+    .transform((value) =>
+      value === '*' ? '*' : value.split(',').map((origin) => origin.trim()),
+    ),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -29,7 +42,7 @@ const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   console.error(
     '❌ Invalid environment variables:',
-    JSON.stringify(parsed.error.flatten().fieldErrors, null, 2),
+    JSON.stringify(z.flattenError(parsed.error).fieldErrors, null, 2),
   );
   process.exit(1);
 }

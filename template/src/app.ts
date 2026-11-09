@@ -27,7 +27,7 @@ export function createApp(): express.Application {
   );
 
   // ─── Body Parsing ─────────────────────────────────────────
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
 
   // ─── Request Logging ──────────────────────────────────────
