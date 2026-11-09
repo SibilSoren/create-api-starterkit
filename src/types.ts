@@ -1,3 +1,5 @@
+import type { PackageManager } from './utils/package-manager.js';
+
 export interface CreateOptions {
   /** Project name (directory name) */
   projectName: string;
@@ -6,7 +8,7 @@ export interface CreateOptions {
   /** Skip git init */
   noGit: boolean;
   /** Package manager to use */
-  packageManager: 'npm' | 'pnpm' | 'yarn';
+  packageManager: PackageManager;
   /** Include Gatekeeper rate limiter */
   includeGatekeeper: boolean;
   /** Include Prisma ORM */
