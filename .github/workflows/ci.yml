@@ -5,14 +5,19 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Weekly, because the template's dependency ranges move even when this
+  # repo doesn't. A new release of a dependency can break generated projects.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 jobs:
-  lint-and-test:
-    name: Lint & Test
+  cli:
+    name: CLI - Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24, 26]
 
     steps:
       - name: Checkout
@@ -30,57 +35,121 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 
-      - name: Smoke test - scaffold a project
-        run: |
-          node dist/index.js test-api --skip-install --no-git
-          ls -la test-api/
-          cat test-api/package.json
-          echo "✅ Scaffold succeeded"
-
-  e2e-test:
-    name: E2E - Boot Generated Project
+  generated-project:
+    name: Generated project - ${{ matrix.package-manager }}, Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
-    needs: lint-and-test
+    needs: cli
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24, 26]
+        package-manager: [npm, pnpm]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Install CLI dependencies
-        run: npm ci
+      - name: Install pnpm
+        if: matrix.package-manager == 'pnpm'
+        run: npm install -g pnpm@latest
 
       - name: Build CLI
-        run: npm run build
+        run: |
+          npm ci
+          npm run build
 
-      - name: Scaffold project
-        run: node dist/index.js test-api --no-git
+      - name: Set a git identity for the initial commit
+        run: |
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.com"
 
-      - name: Run generated project tests
-        working-directory: test-api
-        run: npm test
+      - name: Scaffold a project
+        run: node dist/index.js test-api --yes --package-manager ${{ matrix.package-manager }}
 
-      - name: Boot generated project and verify health
+      - name: Everything is committed, including the lockfile
         working-directory: test-api
         run: |
-          npm run dev &
-          SERVER_PID=$!
-          sleep 5
-          
-          # Test health endpoint
-          RESPONSE=$(curl -s http://localhost:3000/api/health)
-          echo "Health response: $RESPONSE"
-          
-          # Check if response contains "healthy"
-          echo "$RESPONSE" | grep -q "healthy" && echo "✅ Health check passed" || (echo "❌ Health check failed" && exit 1)
-          
-          # Cleanup
-          kill $SERVER_PID
+          git status --short
+          test -z "$(git status --short)"
+
+      - name: Typecheck, build, test, lint and format
+        working-directory: test-api
+        run: |
+          ${{ matrix.package-manager }} run typecheck
+          ${{ matrix.package-manager }} run build
+          ${{ matrix.package-manager }} run test:coverage
+          ${{ matrix.package-manager }} run lint
+          ${{ matrix.package-manager }} run format:check
+
+      - name: Boot the production build and check it
+        working-directory: test-api
+        run: |
+          NODE_ENV=production node dist/server.js &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health > /dev/null && break; sleep 1; done
+
+          curl -sf http://localhost:3000/api/health | tee health.json
+          grep -q '"status":"healthy"' health.json
+
+          # Swagger must list the routes from the compiled files.
+          curl -sf http://localhost:3000/api-docs/swagger-ui-init.js | grep -q '"/api/health"'
+
+          # Malformed JSON is the client's mistake: 400, not 500.
+          status=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{bad' http://localhost:3000/api/health)
+          echo "Malformed JSON status: $status"
+          test "$status" = "400"
+
+  docker:
+    name: Docker image - ${{ matrix.package-manager }}
+    runs-on: ubuntu-latest
+    needs: cli
+    strategy:
+      fail-fast: false
+      matrix:
+        package-manager: [npm, pnpm]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install pnpm
+        if: matrix.package-manager == 'pnpm'
+        run: npm install -g pnpm@latest
+
+      - name: Build CLI and scaffold a project
+        run: |
+          npm ci
+          npm run build
+          node dist/index.js test-api --yes --no-git --package-manager ${{ matrix.package-manager }}
+
+      - name: Build the image
+        working-directory: test-api
+        run: docker build -t test-api .
+
+      - name: Run the image and check health
+        run: |
+          docker run -d --name test-api -p 3000:3000 test-api
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health > /dev/null && break; sleep 1; done
+          curl -sf http://localhost:3000/api/health | grep -q '"status":"healthy"'
+          curl -sf http://localhost:3000/api-docs/swagger-ui-init.js | grep -q '"/api/health"'
+          docker logs test-api
