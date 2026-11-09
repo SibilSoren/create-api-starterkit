@@ -5,6 +5,7 @@ import * as p from '@clack/prompts';
 import { createProject } from './create.js';
 import type { CreateOptions } from './types.js';
 import { log } from './utils/logger.js';
+import { validateProjectName } from './utils/validate.js';
 import { PACKAGE_MANAGERS, isPackageManager } from './utils/package-manager.js';
 
 // package.json sits one level up from both src/ and dist/.
@@ -22,6 +23,8 @@ program
   .option('--skip-install', 'Skip installing dependencies', false)
   .option('--no-git', 'Skip git initialization')
   .option('--package-manager <pm>', `Package manager to use (${PACKAGE_MANAGERS.join(', ')})`)
+  .option('--gatekeeper', 'Add Gatekeeper rate limiting (default)')
+  .option('--no-gatekeeper', 'Skip Gatekeeper rate limiting')
   .option('-y, --yes', 'Skip prompts and use defaults')
   .action(async (projectNameArg: string | undefined, opts: Record<string, unknown>) => {
     console.log();
@@ -41,7 +44,7 @@ program
         skipInstall: opts.skipInstall as boolean,
         noGit: !opts.git,
         packageManager: isPackageManager(opts.packageManager) ? opts.packageManager : 'npm',
-        includeGatekeeper: false,
+        includeGatekeeper: (opts.gatekeeper as boolean | undefined) ?? true,
         includePrisma: false,
       };
       await createProject(options);
@@ -58,16 +61,17 @@ program
             message: 'What is the name of your project?',
             placeholder: 'my-awesome-api',
             defaultValue: 'my-api',
-            validate: (val) => {
-              if (!val) return 'Project name is required';
-            },
+            // Empty means the default name; anything else must be a valid package name.
+            validate: (val) => (val ? validateProjectName(val).message : undefined),
           });
         },
-        includeGatekeeper: () =>
-          p.confirm({
-            message: 'Would you like to include Gatekeeper (Distributed Rate Limiter)?',
+        includeGatekeeper: () => {
+          if (opts.gatekeeper !== undefined) return Promise.resolve(opts.gatekeeper as boolean);
+          return p.confirm({
+            message: 'Add rate limiting with Gatekeeper? (100 requests a minute per IP, easy to change)',
             initialValue: true,
-          }),
+          });
+        },
         includePrisma: () =>
           p.confirm({
             message: 'Would you like to scaffold Prisma ORM?',
