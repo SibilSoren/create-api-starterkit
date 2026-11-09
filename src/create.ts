@@ -14,6 +14,11 @@ import {
   installCommand,
   runCommand,
 } from './utils/package-manager.js';
+import {
+  GATEKEEPER_PACKAGE,
+  GATEKEEPER_VERSION,
+  injectGatekeeper,
+} from './utils/gatekeeper.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -77,8 +82,10 @@ export async function createProject(options: CreateOptions): Promise<void> {
     const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
     
     if (options.includeGatekeeper) {
-      pkg.dependencies = pkg.dependencies || {};
-      pkg.dependencies['@sibilsoren/gatekeeper'] = '^1.0.0';
+      pkg.dependencies = sortKeys({
+        ...pkg.dependencies,
+        [GATEKEEPER_PACKAGE]: GATEKEEPER_VERSION,
+      });
     }
     
     if (options.includePrisma) {
@@ -91,24 +98,15 @@ export async function createProject(options: CreateOptions): Promise<void> {
       pkg.scripts['db:studio'] = 'npx prisma studio';
     }
     
-    fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
+    fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + '\n');
   }
 
-  // Inject Gatekeeper into app.ts
   if (options.includeGatekeeper) {
     const appTsPath = path.join(targetDir, 'src', 'app.ts');
-    if (fs.existsSync(appTsPath)) {
-      let appTs = fs.readFileSync(appTsPath, 'utf-8');
-      appTs = appTs.replace(
-        "import { healthRoutes } from './modules/health/health.routes.js';",
-        "import { healthRoutes } from './modules/health/health.routes.js';\nimport gatekeeper from '@sibilsoren/gatekeeper';"
-      );
-      appTs = appTs.replace(
-        "// ─── Request Logging ──────────────────────────────────────\n  app.use(requestLogger);",
-        "// ─── Request Logging ──────────────────────────────────────\n  app.use(requestLogger);\n\n  // ─── Rate Limiting ────────────────────────────────────────\n  app.use(gatekeeper({ limit: 100, window: 60 }));"
-      );
-      fs.writeFileSync(appTsPath, appTs);
-    }
+    fs.writeFileSync(
+      appTsPath,
+      injectGatekeeper(fs.readFileSync(appTsPath, 'utf-8')),
+    );
   }
 
   if (packageManager === 'pnpm') {
@@ -221,6 +219,15 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.blank();
   console.log(chalk.dim('  Happy coding! 🚀'));
   log.blank();
+}
+
+/**
+ * Sort an object's keys, the way npm keeps dependency lists.
+ */
+function sortKeys(object: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(object).sort(([a], [b]) => a.localeCompare(b)),
+  );
 }
 
 /**
