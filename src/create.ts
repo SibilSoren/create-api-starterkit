@@ -8,6 +8,12 @@ import type { CreateOptions } from './types.js';
 import { copyTemplateDir, isDirEmpty } from './utils/fs.js';
 import { log } from './utils/logger.js';
 import { validateProjectName } from './utils/validate.js';
+import {
+  configurePnpm,
+  detectVersion,
+  installCommand,
+  runCommand,
+} from './utils/package-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,6 +111,10 @@ export async function createProject(options: CreateOptions): Promise<void> {
     }
   }
 
+  if (packageManager === 'pnpm') {
+    configurePnpm(targetDir, detectVersion('pnpm'));
+  }
+
   log.success('Project scaffolded');
 
   // ─── Step 2: Create .env from .env.example ──────────────
@@ -120,17 +130,16 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.success('Environment configured');
 
   // ─── Step 3: Initialize git ─────────────────────────────
+  // Before installing, so husky can set up the pre-commit hook. The first
+  // commit comes last, so it includes the lockfile.
+  let gitReady = false;
   if (!noGit) {
     currentStep++;
     log.step(currentStep, totalSteps, 'Initializing git repository...');
 
     try {
       execSync('git init', { cwd: targetDir, stdio: 'ignore' });
-      execSync('git add -A', { cwd: targetDir, stdio: 'ignore' });
-      execSync('git commit -m "Initial commit from create-api-starterkit"', {
-        cwd: targetDir,
-        stdio: 'ignore',
-      });
+      gitReady = true;
       log.success('Git repository initialized');
     } catch {
       log.warning('Git initialization failed (is git installed?)');
@@ -138,10 +147,9 @@ export async function createProject(options: CreateOptions): Promise<void> {
   }
 
   // ─── Step 4: Install dependencies ───────────────────────
+  const installCmd = installCommand(packageManager);
   if (!skipInstall) {
     currentStep++;
-    const installCmd =
-      packageManager === 'pnpm' ? 'pnpm install' : packageManager === 'yarn' ? 'yarn install' : 'npm install';
     const spinner = ora({
       text: `Installing dependencies with ${packageManager}...`,
       prefixText: chalk.blue(`[${currentStep}/${totalSteps}]`),
@@ -150,24 +158,42 @@ export async function createProject(options: CreateOptions): Promise<void> {
     try {
       execSync(installCmd, {
         cwd: targetDir,
-        stdio: 'ignore',
-        timeout: 120_000, // 2 minute timeout
+        stdio: 'pipe',
+        timeout: 300_000, // 5 minute timeout
       });
       spinner.succeed('Dependencies installed');
-    } catch {
+    } catch (error) {
       spinner.fail('Failed to install dependencies');
-      log.warning(`Run "${installCmd}" manually in the project directory.`);
+      printCommandOutput(error);
+      log.warning(`Fix the error above, then run "${installCmd}" in the project directory.`);
     }
 
     if (options.includePrisma) {
       log.step(++currentStep, totalSteps + 1, 'Initializing Prisma...');
       try {
-        const prismaCmd = packageManager === 'pnpm' ? 'pnpm dlx prisma init' : packageManager === 'yarn' ? 'yarn dlx prisma init' : 'npx prisma init';
+        const prismaCmd = packageManager === 'pnpm' ? 'pnpm dlx prisma init' : 'npx prisma init';
         execSync(prismaCmd, { cwd: targetDir, stdio: 'ignore' });
         log.success('Prisma initialized');
       } catch {
         log.warning('Failed to initialize Prisma. Run "npx prisma init" manually.');
       }
+    }
+  }
+
+  // ─── Initial commit ─────────────────────────────────────
+  if (gitReady) {
+    try {
+      execSync('git add -A', { cwd: targetDir, stdio: 'pipe' });
+      // --no-verify: the pre-commit hook would lint every file of a template
+      // that's already linted.
+      execSync(
+        'git commit --no-verify -m "Initial commit from create-api-starterkit"',
+        { cwd: targetDir, stdio: 'pipe' },
+      );
+      log.success('Created the initial commit');
+    } catch (error) {
+      log.warning('Could not create the initial commit:');
+      printCommandOutput(error);
     }
   }
 
@@ -179,13 +205,9 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.blank();
   console.log(chalk.cyan(`    cd ${projectName}`));
   if (skipInstall) {
-    console.log(
-      chalk.cyan(
-        `    ${packageManager === 'pnpm' ? 'pnpm install' : 'npm install'}`,
-      ),
-    );
+    console.log(chalk.cyan(`    ${installCmd}`));
   }
-  console.log(chalk.cyan('    npm run dev'));
+  console.log(chalk.cyan(`    ${runCommand(packageManager, 'dev')}`));
   log.blank();
   console.log(
     `  ${chalk.dim('Server:')}       http://localhost:3000`,
@@ -199,4 +221,18 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.blank();
   console.log(chalk.dim('  Happy coding! 🚀'));
   log.blank();
+}
+
+/**
+ * Print the tail of a failed command's output, so the user sees why it failed.
+ */
+function printCommandOutput(error: unknown): void {
+  const { stdout, stderr } = error as { stdout?: Buffer; stderr?: Buffer };
+  const output = `${stdout?.toString() ?? ''}\n${stderr?.toString() ?? ''}`
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .slice(-15);
+  for (const line of output) {
+    console.log(chalk.dim(`    ${line}`));
+  }
 }
