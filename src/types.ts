@@ -11,4 +11,6 @@ export interface CreateOptions {
   packageManager: PackageManager;
   /** Include Gatekeeper rate limiter */
   includeGatekeeper: boolean;
+  /** Directory to create the project in (default: the current directory) */
+  cwd?: string;
 }

@@ -40,7 +40,7 @@ export async function createProject(options: CreateOptions): Promise<void> {
   }
 
   // ─── Check target directory ─────────────────────────────
-  const targetDir = path.resolve(process.cwd(), projectName);
+  const targetDir = path.resolve(options.cwd ?? process.cwd(), projectName);
 
   if (!isDirEmpty(targetDir)) {
     log.error(`Directory "${projectName}" already exists and is not empty.`);
