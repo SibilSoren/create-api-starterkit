@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { type ZodSchema, type ZodError } from 'zod';
+import type { ZodError, ZodType } from 'zod';
 import { ApiResponse } from '../utils/api-response.js';
 
 /**
@@ -11,7 +11,7 @@ import { ApiResponse } from '../utils/api-response.js';
  *   router.get('/users', validate(listUsersQuerySchema, 'query'), listUsers);
  */
 export function validate(
-  schema: ZodSchema,
+  schema: ZodType,
   source: 'body' | 'query' | 'params' = 'body',
 ) {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -23,8 +23,14 @@ export function validate(
       return;
     }
 
-    // Replace the original data with the parsed/transformed data
-    req[source] = result.data;
+    // Replace the original data with the parsed/transformed data.
+    // Express 5 makes req.query a getter, so it can't be assigned directly.
+    Object.defineProperty(req, source, {
+      value: result.data,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
     next();
   };
 }
@@ -36,7 +42,7 @@ function formatZodErrors(
   error: ZodError,
 ): Array<{ field: string; message: string }> {
   return error.issues.map((issue) => ({
-    field: issue.path.join('.'),
+    field: issue.path.map(String).join('.'),
     message: issue.message,
   }));
 }

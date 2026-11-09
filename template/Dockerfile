@@ -1,13 +1,14 @@
 # ──────────────────────────────────────────────
 # Build Stage
 # ──────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files first for better caching
+# Copy package files first for better caching.
+# --ignore-scripts skips husky's git hook setup, which needs a .git folder.
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copy source code
 COPY tsconfig.json ./
@@ -19,7 +20,9 @@ RUN npm run build
 # ──────────────────────────────────────────────
 # Production Stage
 # ──────────────────────────────────────────────
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
+
+ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -28,7 +31,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Copy package files and install production deps only
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist

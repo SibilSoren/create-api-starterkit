@@ -54,7 +54,7 @@ export class ApiResponse {
       success: false,
       data: null,
       message,
-      ...(errors && { errors }),
+      ...(errors === undefined ? {} : { errors }),
       timestamp: new Date().toISOString(),
     });
   }
