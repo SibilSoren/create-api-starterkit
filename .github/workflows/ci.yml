@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
   generated-project:
-    name: Generated project - ${{ matrix.package-manager }}, Node ${{ matrix.node-version }}
+    name: Generated project - ${{ matrix.package-manager }}, Node ${{ matrix.node-version }} ${{ matrix.features }}
     runs-on: ubuntu-latest
     needs: cli
     strategy:
@@ -53,6 +53,15 @@ jobs:
       matrix:
         node-version: [22, 24, 26]
         package-manager: [npm, pnpm]
+        features: ['--gatekeeper']
+        # The project without extras must keep working as features are added.
+        include:
+          - node-version: 24
+            package-manager: npm
+            features: '--no-gatekeeper'
+          - node-version: 24
+            package-manager: pnpm
+            features: '--no-gatekeeper'
 
     steps:
       - name: Checkout
@@ -79,7 +88,7 @@ jobs:
           git config --global user.email "ci@example.com"
 
       - name: Scaffold a project
-        run: node dist/index.js test-api --yes --package-manager ${{ matrix.package-manager }}
+        run: node dist/index.js test-api --yes --package-manager ${{ matrix.package-manager }} ${{ matrix.features }}
 
       - name: Everything is committed, including the lockfile
         working-directory: test-api
@@ -112,6 +121,13 @@ jobs:
           status=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{bad' http://localhost:3000/api/health)
           echo "Malformed JSON status: $status"
           test "$status" = "400"
+
+          # Rate limit headers only when Gatekeeper was chosen.
+          if [ "${{ matrix.features }}" = "--gatekeeper" ]; then
+            curl -sI http://localhost:3000/api/health | grep -qi '^x-ratelimit-limit: 100'
+          else
+            ! curl -sI http://localhost:3000/api/health | grep -qi '^x-ratelimit-limit'
+          fi
 
   docker:
     name: Docker image - ${{ matrix.package-manager }}
