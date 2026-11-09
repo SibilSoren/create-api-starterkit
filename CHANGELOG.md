@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-11-09
+
+### Added
+
+- Interactive setup: project name, Gatekeeper rate limiting and package manager. `--yes` takes the defaults, any option passed on the command line isn't asked, and it never asks in CI.
+- Optional rate limiting with [Gatekeeper](https://github.com/SibilSoren/gatekeeper) 2: 100 requests a minute per IP, added by default. `--gatekeeper` / `--no-gatekeeper` choose without asking.
 
 ### Fixed
 
@@ -35,7 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `typecheck` script, `.dockerignore`, `.nvmrc` and tests for validation, error handling and Swagger in generated projects.
-- CI scaffolds a project with npm and pnpm on Node 22, 24 and 26, then builds, tests, lints, boots the production build and builds the Docker image. It also runs weekly to catch dependency changes.
+- CI scaffolds a project with npm and pnpm on Node 22, 24 and 26, with and without Gatekeeper, then builds, tests, lints, boots the production build and builds the Docker image. It also runs weekly to catch dependency changes.
+- CLI tests that scaffold every combination of options and check the generated files, so a new option can't change what the others produce.
 
 ## [1.0.0] - 2026-06-09
 
