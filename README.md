@@ -10,7 +10,7 @@ Scaffold a production-ready **Node.js + TypeScript + Express** API with a single
 npx create-api-starterkit my-api
 ```
 
-**Zero prompts. Zero config. Just works.**
+Answer two questions, or add `--yes` to take the defaults. Requires Node.js 22.12 or later.
 
 ## What You Get
 
@@ -26,6 +26,7 @@ A fully configured API project with:
 - 🐳 **Docker** — multi-stage Dockerfile + docker-compose
 - 🎨 **ESLint + Prettier** — consistent code style
 - 🪝 **Husky + lint-staged** — git hooks for quality
+- 🚦 **Rate limiting** (optional) — [Gatekeeper](https://github.com/SibilSoren/gatekeeper), 100 requests a minute per IP by default
 
 ## Quick Start
 
@@ -51,9 +52,13 @@ npx create-api-starterkit <project-name> [options]
 
 | Option | Description | Default |
 |---|---|---|
+| `-y, --yes` | Skip the questions and use the defaults | asks |
+| `--gatekeeper` / `--no-gatekeeper` | Add or skip Gatekeeper rate limiting | add |
+| `--package-manager <pm>` | Use `npm` or `pnpm` | `npm` |
 | `--skip-install` | Skip dependency installation | `false` |
 | `--no-git` | Skip git initialization | `false` |
-| `--package-manager <pm>` | Use `npm` or `pnpm` | `npm` |
+
+Any option you pass on the command line isn't asked again. In CI (when `CI` is set), it never asks.
 
 ## Generated Project Structure
 
