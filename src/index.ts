@@ -45,7 +45,6 @@ program
         noGit: !opts.git,
         packageManager: isPackageManager(opts.packageManager) ? opts.packageManager : 'npm',
         includeGatekeeper: (opts.gatekeeper as boolean | undefined) ?? true,
-        includePrisma: false,
       };
       await createProject(options);
       return;
@@ -72,11 +71,6 @@ program
             initialValue: true,
           });
         },
-        includePrisma: () =>
-          p.confirm({
-            message: 'Would you like to scaffold Prisma ORM?',
-            initialValue: true,
-          }),
         packageManager: () => {
           if (opts.packageManager) return Promise.resolve(opts.packageManager as string);
           return p.select({
@@ -100,7 +94,6 @@ program
       noGit: !opts.git,
       packageManager: isPackageManager(project.packageManager) ? project.packageManager : 'npm',
       includeGatekeeper: project.includeGatekeeper as boolean,
-      includePrisma: project.includePrisma as boolean,
     };
 
     await createProject(options);

@@ -11,6 +11,4 @@ export interface CreateOptions {
   packageManager: PackageManager;
   /** Include Gatekeeper rate limiter */
   includeGatekeeper: boolean;
-  /** Include Prisma ORM */
-  includePrisma: boolean;
 }

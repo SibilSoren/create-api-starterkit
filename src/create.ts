@@ -87,17 +87,7 @@ export async function createProject(options: CreateOptions): Promise<void> {
         [GATEKEEPER_PACKAGE]: GATEKEEPER_VERSION,
       });
     }
-    
-    if (options.includePrisma) {
-      pkg.dependencies = pkg.dependencies || {};
-      pkg.devDependencies = pkg.devDependencies || {};
-      pkg.dependencies['@prisma/client'] = '^5.10.0';
-      pkg.devDependencies['prisma'] = '^5.10.0';
-      pkg.scripts = pkg.scripts || {};
-      pkg.scripts['db:push'] = 'npx prisma db push';
-      pkg.scripts['db:studio'] = 'npx prisma studio';
-    }
-    
+
     fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + '\n');
   }
 
@@ -164,17 +154,6 @@ export async function createProject(options: CreateOptions): Promise<void> {
       spinner.fail('Failed to install dependencies');
       printCommandOutput(error);
       log.warning(`Fix the error above, then run "${installCmd}" in the project directory.`);
-    }
-
-    if (options.includePrisma) {
-      log.step(++currentStep, totalSteps + 1, 'Initializing Prisma...');
-      try {
-        const prismaCmd = packageManager === 'pnpm' ? 'pnpm dlx prisma init' : 'npx prisma init';
-        execSync(prismaCmd, { cwd: targetDir, stdio: 'ignore' });
-        log.success('Prisma initialized');
-      } catch {
-        log.warning('Failed to initialize Prisma. Run "npx prisma init" manually.');
-      }
     }
   }
 
