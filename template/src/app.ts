@@ -8,6 +8,7 @@ import { requestLogger } from './middlewares/request-logger.js';
 import { notFoundHandler } from './middlewares/not-found.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { healthRoutes } from './modules/health/health.routes.js';
+// @slot imports
 
 /**
  * Creates and configures the Express application.
@@ -42,6 +43,7 @@ export function createApp(): express.Application {
   // Kept above any rate limiting, so load balancers and orchestrators can
   // always reach it.
   app.use('/api/health', healthRoutes);
+  // @slot middleware
 
   // ─── API Documentation ────────────────────────────────────
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

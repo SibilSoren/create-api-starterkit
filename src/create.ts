@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import ora from 'ora';
 import chalk from 'chalk';
 import type { CreateOptions } from './types.js';
-import { copyTemplateDir, isDirEmpty } from './utils/fs.js';
+import { isDirEmpty } from './utils/fs.js';
 import { log } from './utils/logger.js';
 import { validateProjectName } from './utils/validate.js';
 import {
@@ -14,11 +14,8 @@ import {
   installCommand,
   runCommand,
 } from './utils/package-manager.js';
-import {
-  GATEKEEPER_PACKAGE,
-  GATEKEEPER_VERSION,
-  injectGatekeeper,
-} from './utils/gatekeeper.js';
+import { composeProject } from './compose/project.js';
+import { selectFeatures } from './features/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,34 +67,13 @@ export async function createProject(options: CreateOptions): Promise<void> {
     process.exit(1);
   }
 
-  const replacements: Record<string, string> = {
-    '{{PROJECT_NAME}}': projectName,
-  };
-
-  copyTemplateDir(resolvedTemplateDir, targetDir, replacements);
-  
-  // ─── Step 1.5: Dynamic Configuration ────────────────────
-  const packageJsonPath = path.join(targetDir, 'package.json');
-  if (fs.existsSync(packageJsonPath)) {
-    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-    
-    if (options.includeGatekeeper) {
-      pkg.dependencies = sortKeys({
-        ...pkg.dependencies,
-        [GATEKEEPER_PACKAGE]: GATEKEEPER_VERSION,
-      });
-    }
-
-    fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + '\n');
-  }
-
-  if (options.includeGatekeeper) {
-    const appTsPath = path.join(targetDir, 'src', 'app.ts');
-    fs.writeFileSync(
-      appTsPath,
-      injectGatekeeper(fs.readFileSync(appTsPath, 'utf-8')),
-    );
-  }
+  composeProject({
+    templateDir: resolvedTemplateDir,
+    featuresDir: path.resolve(resolvedTemplateDir, '..', 'features'),
+    targetDir,
+    features: selectFeatures(options),
+    replacements: { '{{PROJECT_NAME}}': projectName },
+  });
 
   if (packageManager === 'pnpm') {
     configurePnpm(targetDir, detectVersion('pnpm'));
@@ -198,15 +174,6 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.blank();
   console.log(chalk.dim('  Happy coding! 🚀'));
   log.blank();
-}
-
-/**
- * Sort an object's keys, the way npm keeps dependency lists.
- */
-function sortKeys(object: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(object).sort(([a], [b]) => a.localeCompare(b)),
-  );
 }
 
 /**
