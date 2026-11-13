@@ -45,7 +45,7 @@ jobs:
         run: npm run build
 
   generated-project:
-    name: Generated project - ${{ matrix.package-manager }}, Node ${{ matrix.node-version }} ${{ matrix.features }}
+    name: Generated project - ${{ matrix.package-manager }}, Node ${{ matrix.node-version }} ${{ matrix.features }} --db ${{ matrix.db }}
     runs-on: ubuntu-latest
     needs: cli
     strategy:
@@ -54,14 +54,26 @@ jobs:
         node-version: [22, 24, 26]
         package-manager: [npm, pnpm]
         features: ['--gatekeeper']
-        # The project without extras must keep working as features are added.
+        db: [none]
         include:
+          # The project without extras must keep working as features are added.
           - node-version: 24
             package-manager: npm
             features: '--no-gatekeeper'
+            db: none
           - node-version: 24
             package-manager: pnpm
             features: '--no-gatekeeper'
+            db: none
+          # PostgreSQL with Drizzle, run against a real Postgres.
+          - node-version: 24
+            package-manager: npm
+            features: '--gatekeeper'
+            db: drizzle
+          - node-version: 24
+            package-manager: pnpm
+            features: '--no-gatekeeper'
+            db: drizzle
 
     steps:
       - name: Checkout
@@ -88,7 +100,7 @@ jobs:
           git config --global user.email "ci@example.com"
 
       - name: Scaffold a project
-        run: node dist/index.js test-api --yes --package-manager ${{ matrix.package-manager }} ${{ matrix.features }}
+        run: node dist/index.js test-api --yes --package-manager ${{ matrix.package-manager }} ${{ matrix.features }} --db ${{ matrix.db }}
 
       - name: Everything is committed, including the lockfile
         working-directory: test-api
@@ -105,10 +117,25 @@ jobs:
           ${{ matrix.package-manager }} run lint
           ${{ matrix.package-manager }} run format:check
 
+      - name: Start Postgres
+        if: matrix.db == 'drizzle'
+        run: |
+          # Matches DATABASE_URL in the generated .env.
+          docker run -d --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=app postgres:18-alpine
+          for i in $(seq 1 30); do docker exec postgres pg_isready -U postgres -d app && break; sleep 1; done
+
       - name: Boot the production build and check it
         working-directory: test-api
         run: |
-          NODE_ENV=production TRUST_PROXY=1 node dist/server.js &
+          if [ "${{ matrix.db }}" = "drizzle" ]; then
+            # The production migration script, then the sample users.
+            NODE_ENV=production node dist/db/migrate.js
+            ${{ matrix.package-manager }} run db:seed
+          fi
+
+          NODE_ENV=production TRUST_PROXY=1 node dist/server.js > server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'echo "--- server log"; cat server.log' EXIT
           for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health > /dev/null && break; sleep 1; done
 
           curl -sf http://localhost:3000/api/health | tee health.json
@@ -145,14 +172,36 @@ jobs:
             echo "Rate limit headers without Gatekeeper"; exit 1
           fi
 
+          if [ "${{ matrix.db }}" = "drizzle" ]; then
+            # The seeded users come back from Postgres.
+            curl -sf http://localhost:3000/api/users | grep -q '"email":"asha@example.com"'
+            curl -sf http://localhost:3000/api-docs/swagger-ui-init.js | grep -q '"/api/users"'
+
+            # A new user is created; the same email again, in capitals, is a conflict.
+            test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d '{"name":"CI","email":"ci@example.com"}' http://localhost:3000/api/users)" = "201"
+            test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d '{"name":"CI","email":"CI@example.com"}' http://localhost:3000/api/users)" = "409"
+          fi
+
+          # SIGTERM shuts down cleanly, closing database connections too.
+          kill -TERM $SERVER_PID
+          wait $SERVER_PID
+          if [ "${{ matrix.db }}" = "drizzle" ]; then
+            grep -q 'Database connections closed' server.log
+          fi
+
   docker:
-    name: Docker image - ${{ matrix.package-manager }}
+    name: Docker image - ${{ matrix.package-manager }} --db ${{ matrix.db }}
     runs-on: ubuntu-latest
     needs: cli
     strategy:
       fail-fast: false
       matrix:
         package-manager: [npm, pnpm]
+        db: [none]
+        include:
+          # The whole docker compose stack: Postgres, migrations, the API.
+          - package-manager: npm
+            db: drizzle
 
     steps:
       - name: Checkout
@@ -172,16 +221,33 @@ jobs:
         run: |
           npm ci
           npm run build
-          node dist/index.js test-api --yes --no-git --package-manager ${{ matrix.package-manager }}
+          node dist/index.js test-api --yes --no-git --package-manager ${{ matrix.package-manager }} --db ${{ matrix.db }}
 
       - name: Build the image
+        if: matrix.db == 'none'
         working-directory: test-api
         run: docker build -t test-api .
 
       - name: Run the image and check health
+        if: matrix.db == 'none'
         run: |
           docker run -d --name test-api -p 3000:3000 test-api
           for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health > /dev/null && break; sleep 1; done
           curl -sf http://localhost:3000/api/health | grep -q '"status":"healthy"'
           curl -sf http://localhost:3000/api-docs/swagger-ui-init.js | grep -q '"/api/health"'
           docker logs test-api
+
+      - name: Run docker compose with Postgres and check it
+        if: matrix.db == 'drizzle'
+        working-directory: test-api
+        run: |
+          trap 'docker compose logs' EXIT
+          docker compose up -d --build --wait --wait-timeout 180
+          curl -sf http://localhost:3000/api/health | grep -q '"status":"healthy"'
+
+          # Migrations ran when the API started: the table is there, and empty.
+          curl -sf http://localhost:3000/api/users | grep -q '"data":\[\]'
+
+          # The seed script works from the production image.
+          docker compose exec -T api node dist/db/seed.js
+          curl -sf http://localhost:3000/api/users | grep -q '"email":"asha@example.com"'
