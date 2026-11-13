@@ -27,7 +27,7 @@ The server will start at `http://localhost:3000`.
 |---|---|
 | `npm run dev` | Start development server with hot reload |
 | `npm run build` | Compile TypeScript to JavaScript |
-| `npm run typecheck` | Type-check without building |
+| `npm run typecheck` | Type-check the source and the tests without building |
 | `npm start` | Run production build |
 | `npm test` | Run tests |
 | `npm run test:watch` | Run tests in watch mode |
