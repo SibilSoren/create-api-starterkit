@@ -7,6 +7,7 @@ import type { CreateOptions } from './types.js';
 import { log } from './utils/logger.js';
 import { validateProjectName } from './utils/validate.js';
 import { PACKAGE_MANAGERS, isPackageManager } from './utils/package-manager.js';
+import { DATABASES, isDatabase } from './features/index.js';
 
 // package.json sits one level up from both src/ and dist/.
 const { version } = createRequire(import.meta.url)('../package.json') as {
@@ -25,6 +26,7 @@ program
   .option('--package-manager <pm>', `Package manager to use (${PACKAGE_MANAGERS.join(', ')})`)
   .option('--gatekeeper', 'Add Gatekeeper rate limiting (default)')
   .option('--no-gatekeeper', 'Skip Gatekeeper rate limiting')
+  .option('--db <db>', `Database: ${DATABASES.join(' or ')} (drizzle is PostgreSQL with Drizzle ORM)`)
   .option('-y, --yes', 'Skip prompts and use defaults')
   .action(async (projectNameArg: string | undefined, opts: Record<string, unknown>) => {
     console.log();
@@ -33,6 +35,11 @@ program
       log.error(
         `Unknown package manager "${String(opts.packageManager)}". Use one of: ${PACKAGE_MANAGERS.join(', ')}.`,
       );
+      process.exit(1);
+    }
+
+    if (opts.db !== undefined && !isDatabase(opts.db)) {
+      log.error(`Unknown database "${String(opts.db)}". Use one of: ${DATABASES.join(', ')}.`);
       process.exit(1);
     }
 
@@ -45,6 +52,7 @@ program
         noGit: !opts.git,
         packageManager: isPackageManager(opts.packageManager) ? opts.packageManager : 'npm',
         includeGatekeeper: (opts.gatekeeper as boolean | undefined) ?? true,
+        database: isDatabase(opts.db) ? opts.db : 'none',
       };
       await createProject(options);
       return;
@@ -71,6 +79,21 @@ program
             initialValue: true,
           });
         },
+        database: () => {
+          if (opts.db !== undefined) return Promise.resolve(opts.db as string);
+          return p.select({
+            message: 'Add a database?',
+            options: [
+              { value: 'none', label: 'No database' },
+              {
+                value: 'drizzle',
+                label: 'PostgreSQL with Drizzle ORM',
+                hint: 'users example, migrations, seed data',
+              },
+            ],
+            initialValue: 'none',
+          });
+        },
         packageManager: () => {
           if (opts.packageManager) return Promise.resolve(opts.packageManager as string);
           return p.select({
@@ -94,6 +117,7 @@ program
       noGit: !opts.git,
       packageManager: isPackageManager(project.packageManager) ? project.packageManager : 'npm',
       includeGatekeeper: project.includeGatekeeper as boolean,
+      database: isDatabase(project.database) ? project.database : 'none',
     };
 
     await createProject(options);
