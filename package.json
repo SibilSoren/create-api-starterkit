@@ -1,6 +1,6 @@
 {
   "name": "create-api-starterkit",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Scaffold a production-ready Node.js + TypeScript + Express API with a single command",
   "type": "module",
   "bin": {
