@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-13
+
+### Fixed
+
+- Rate limiting works behind a load balancer. Generated apps trusted no proxy, so every client had the load balancer's IP and they all shared one limit. Set the new `TRUST_PROXY` variable to the number of proxies in front of the app (usually `1`) or to their addresses. `true` is refused, because it would let clients choose their own IP.
+- The health check is never rate limited, so load balancers can reach it even when clients are over the limit. Gatekeeper now comes right after it.
+- In production, a non-operational `ApiError`, such as `ApiError.internal()`, sends only the status text instead of its message, which could hold internal details.
+- `npm run typecheck` checks the tests too. The build now uses `tsconfig.build.json`.
+- `PORT` must be a whole number from 1 to 65535.
+
 ## [1.1.0] - 2026-11-09
 
 ### Added
