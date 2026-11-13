@@ -1,3 +1,4 @@
+import { STATUS_CODES } from 'node:http';
 import type { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../utils/api-error.js';
 import { ApiResponse } from '../utils/api-response.js';
@@ -21,7 +22,13 @@ export function errorHandler(
     } else {
       logger.error({ err }, 'Unhandled error');
     }
-    ApiResponse.error(res, err.message, err.statusCode);
+    // A non-operational error is a bug, and its message can hold internal
+    // details, so production sends only the status text.
+    const message =
+      err.isOperational || env.NODE_ENV !== 'production'
+        ? err.message
+        : (STATUS_CODES[err.statusCode] ?? 'Internal Server Error');
+    ApiResponse.error(res, message, err.statusCode);
     return;
   }
 
