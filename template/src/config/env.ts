@@ -18,7 +18,7 @@ export const envSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
 
-  PORT: z.coerce.number().positive().default(3000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 
   HOST: z.string().default('0.0.0.0'),
 
