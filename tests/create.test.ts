@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { fillSlots } from '../src/compose/slots.js';
 import { createProject } from '../src/create.js';
 import type { CreateOptions } from '../src/types.js';
 
@@ -13,6 +14,9 @@ import type { CreateOptions } from '../src/types.js';
 const templateDir = new URL('../template/', import.meta.url);
 const templateFile = (name: string) =>
   fs.readFileSync(new URL(name, templateDir), 'utf-8');
+// A template file as it is in a project with no extras: slot lines removed.
+const withoutSlots = (content: string) =>
+  fillSlots(content, new Map(), 'template').content;
 
 let workDir: string;
 
@@ -52,25 +56,17 @@ function allFiles(dir: string): string[] {
 }
 
 describe('createProject: no extras', () => {
-  it('copies the template unchanged apart from the project name', async () => {
+  it('copies the template unchanged apart from the project name and slots', async () => {
     const project = await scaffold();
 
     expect(project.pkg.name).toBe('my-api');
-    expect(project.read('src/app.ts')).toBe(templateFile('src/app.ts'));
+    expect(project.read('src/app.ts')).toBe(
+      withoutSlots(templateFile('src/app.ts')),
+    );
     expect(project.read('Dockerfile')).toBe(templateFile('Dockerfile'));
     expect(project.pkg.dependencies).toEqual(
       JSON.parse(templateFile('package.json')).dependencies,
     );
-  });
-
-  it('replaces every placeholder', async () => {
-    const project = await scaffold();
-
-    for (const file of allFiles(project.dir)) {
-      expect(fs.readFileSync(file, 'utf-8'), file).not.toContain(
-        '{{PROJECT_NAME}}',
-      );
-    }
   });
 
   it('creates .gitignore, .env and the pre-commit hook', async () => {
@@ -88,6 +84,26 @@ describe('createProject: no extras', () => {
     expect(project.exists('pnpm-workspace.yaml')).toBe(false);
     expect(project.pkg.packageManager).toBeUndefined();
   });
+});
+
+describe('createProject: every combination', () => {
+  it.each([
+    { packageManager: 'npm', includeGatekeeper: false },
+    { packageManager: 'npm', includeGatekeeper: true },
+    { packageManager: 'pnpm', includeGatekeeper: false },
+    { packageManager: 'pnpm', includeGatekeeper: true },
+  ] as const)(
+    'leaves no placeholder or slot line ($packageManager, gatekeeper: $includeGatekeeper)',
+    async (overrides) => {
+      const project = await scaffold(overrides);
+
+      for (const file of allFiles(project.dir)) {
+        const content = fs.readFileSync(file, 'utf-8');
+        expect(content, file).not.toContain('{{PROJECT_NAME}}');
+        expect(content, file).not.toMatch(/@slot\b/);
+      }
+    },
+  );
 });
 
 describe('createProject: --gatekeeper', () => {
