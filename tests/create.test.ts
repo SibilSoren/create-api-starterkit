@@ -63,7 +63,7 @@ describe('createProject: no extras', () => {
     expect(project.read('src/app.ts')).toBe(
       withoutSlots(templateFile('src/app.ts')),
     );
-    expect(project.read('Dockerfile')).toBe(templateFile('Dockerfile'));
+    expect(project.read('Dockerfile')).toBe(withoutSlots(templateFile('Dockerfile')));
     expect(project.pkg.dependencies).toEqual(
       JSON.parse(templateFile('package.json')).dependencies,
     );
@@ -74,7 +74,7 @@ describe('createProject: no extras', () => {
 
     expect(project.exists('.gitignore')).toBe(true);
     expect(project.exists('_gitignore')).toBe(false);
-    expect(project.read('.env')).toBe(templateFile('.env.example'));
+    expect(project.read('.env')).toBe(withoutSlots(templateFile('.env.example')));
     expect(project.read('.husky/pre-commit')).toContain('lint-staged');
   });
 
@@ -122,9 +122,9 @@ describe('createProject: --gatekeeper', () => {
   it('changes nothing else', async () => {
     const project = await scaffold({ includeGatekeeper: true });
 
-    expect(project.read('Dockerfile')).toBe(templateFile('Dockerfile'));
+    expect(project.read('Dockerfile')).toBe(withoutSlots(templateFile('Dockerfile')));
     expect(project.read('README.md')).toBe(
-      templateFile('README.md').replaceAll('{{PROJECT_NAME}}', 'my-api'),
+      withoutSlots(templateFile('README.md')).replaceAll('{{PROJECT_NAME}}', 'my-api'),
     );
   });
 });
