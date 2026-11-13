@@ -35,11 +35,14 @@ create-api-starterkit/
 ├── src/              # CLI tool source code
 │   ├── index.ts      # Entry point
 │   ├── create.ts     # Core scaffolding logic
+│   ├── compose/      # Fills slots and merges package.json
+│   ├── features/     # One file per option, e.g. gatekeeper.ts
 │   ├── types.ts      # Shared types
 │   └── utils/        # Helper utilities
-├── template/         # The API project template
+├── template/         # The API project without any option
 │   ├── src/          # Template source files
 │   └── ...           # Config files
+├── features/         # Extra files for an option, in features/<id>/
 └── ...
 ```
 
@@ -52,6 +55,26 @@ create-api-starterkit/
 **To the template** (`template/`):
 - Modify the generated API project
 - Test by scaffolding a new project and running it
+- Keep the `@slot` lines: options add their code there
+
+### Adding an Option
+
+Options such as Gatekeeper are features. A feature never edits template files directly. It adds text at **slots**, marker lines in the template that are removed from projects that don't use them:
+
+```ts
+  app.use('/api/health', healthRoutes);
+  // @slot middleware
+```
+
+Use `# @slot name` in YAML, Dockerfiles and `.env` files, and `<!-- @slot name -->` in Markdown.
+
+1. Add the slots you need to the template, each in one place.
+2. Describe the feature in `src/features/<id>.ts`: its dependencies, its scripts and what it adds at each slot. See `src/features/gatekeeper.ts`.
+3. Put files that are new to the project in `features/<id>/`, laid out like the project. They can't replace a template file or another feature's file.
+4. Register it in `src/features/index.ts`, and add its flag and question in `src/index.ts`.
+5. Add scaffold tests to `tests/create.test.ts` and a CI matrix entry in `.github/workflows/ci.yml`. Keep the project without options covered.
+
+`tests/features.test.ts` checks every registered feature on its own: its slots exist exactly once, it doesn't replace template files, and it changes nothing outside package.json, the files it adds to and its own files.
 
 ### Code Style
 
