@@ -1,0 +1,11 @@
+{
+  // Compiles src/ into dist/. tsconfig.json also covers tests/, so that
+  // "npm run typecheck" and your editor check the tests too.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"]
+}
