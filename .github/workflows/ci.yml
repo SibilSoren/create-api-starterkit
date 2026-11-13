@@ -159,6 +159,9 @@ jobs:
             curl -sI http://localhost:3000/api/nonexistent | grep -qi '^x-ratelimit-limit: 100'
 
             # Behind a proxy (TRUST_PROXY=1), each client has its own limit.
+            # Gatekeeper counts per clock minute, so start well inside one; near
+            # the boundary the count drops and one more request gets through.
+            while [ "$(date +%S)" -ge 50 ]; do sleep 1; done
             # One client goes over it, and a second one still gets through.
             for i in $(seq 1 100); do
               curl -s -o /dev/null -H 'X-Forwarded-For: 198.51.100.1' http://localhost:3000/api/nonexistent
