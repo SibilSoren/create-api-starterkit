@@ -8,7 +8,7 @@ const templateAppTs = fs.readFileSync(
 );
 
 describe('injectGatekeeper', () => {
-  it('imports gatekeeper by name and adds it after request logging', () => {
+  it('imports gatekeeper by name and adds it after logging and the health check', () => {
     const appTs = injectGatekeeper(templateAppTs);
 
     expect(appTs).toContain(
@@ -18,8 +18,12 @@ describe('injectGatekeeper', () => {
     expect(appTs.indexOf('app.use(requestLogger)')).toBeLessThan(
       appTs.indexOf('app.use(gatekeeper('),
     );
+    // Load balancers must reach the health check even when a client is over the limit.
+    expect(appTs.indexOf("app.use('/api/health'")).toBeLessThan(
+      appTs.indexOf('app.use(gatekeeper('),
+    );
     expect(appTs.indexOf('app.use(gatekeeper(')).toBeLessThan(
-      appTs.indexOf("app.use('/api/health'"),
+      appTs.indexOf("app.use('/api-docs'"),
     );
   });
 

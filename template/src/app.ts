@@ -38,11 +38,13 @@ export function createApp(): express.Application {
   // ─── Request Logging ──────────────────────────────────────
   app.use(requestLogger);
 
+  // ─── Health Check ─────────────────────────────────────────
+  // Kept above any rate limiting, so load balancers and orchestrators can
+  // always reach it.
+  app.use('/api/health', healthRoutes);
+
   // ─── API Documentation ────────────────────────────────────
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-  // ─── Routes ───────────────────────────────────────────────
-  app.use('/api/health', healthRoutes);
 
   // ─── Add your routes here ─────────────────────────────────
   // app.use('/api/users', userRoutes);

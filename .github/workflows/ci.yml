@@ -122,9 +122,14 @@ jobs:
           echo "Malformed JSON status: $status"
           test "$status" = "400"
 
-          # Rate limit headers only when Gatekeeper was chosen.
+          # The health check is never rate limited.
+          if curl -sI http://localhost:3000/api/health | grep -qi '^x-ratelimit-limit'; then
+            echo "The health check is rate limited"; exit 1
+          fi
+
+          # Other routes have rate limit headers only when Gatekeeper was chosen.
           if [ "${{ matrix.features }}" = "--gatekeeper" ]; then
-            curl -sI http://localhost:3000/api/health | grep -qi '^x-ratelimit-limit: 100'
+            curl -sI http://localhost:3000/api/nonexistent | grep -qi '^x-ratelimit-limit: 100'
 
             # Behind a proxy (TRUST_PROXY=1), each client has its own limit.
             # One client goes over it, and a second one still gets through.
@@ -133,8 +138,11 @@ jobs:
             done
             test "$(curl -s -o /dev/null -w '%{http_code}' -H 'X-Forwarded-For: 198.51.100.1' http://localhost:3000/api/nonexistent)" = "429"
             test "$(curl -s -o /dev/null -w '%{http_code}' -H 'X-Forwarded-For: 198.51.100.2' http://localhost:3000/api/nonexistent)" = "404"
-          else
-            ! curl -sI http://localhost:3000/api/health | grep -qi '^x-ratelimit-limit'
+
+            # The client that's over the limit can still reach the health check.
+            test "$(curl -s -o /dev/null -w '%{http_code}' -H 'X-Forwarded-For: 198.51.100.1' http://localhost:3000/api/health)" = "200"
+          elif curl -sI http://localhost:3000/api/nonexistent | grep -qi '^x-ratelimit-limit'; then
+            echo "Rate limit headers without Gatekeeper"; exit 1
           fi
 
   docker:
