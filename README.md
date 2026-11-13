@@ -26,7 +26,7 @@ A fully configured API project with:
 - 🐳 **Docker** — multi-stage Dockerfile + docker-compose
 - 🎨 **ESLint + Prettier** — consistent code style
 - 🪝 **Husky + lint-staged** — git hooks for quality
-- 🚦 **Rate limiting** (optional) — [Gatekeeper](https://github.com/SibilSoren/gatekeeper), 100 requests a minute per IP by default
+- 🚦 **Rate limiting** (optional) — [Gatekeeper](https://github.com/SibilSoren/gatekeeper), 100 requests a minute per IP by default. Behind a load balancer, set `TRUST_PROXY` in the generated project.
 
 ## Quick Start
 
