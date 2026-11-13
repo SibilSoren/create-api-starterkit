@@ -24,3 +24,18 @@ describe('TRUST_PROXY', () => {
     expect(parse('TRUE').success).toBe(false);
   });
 });
+
+describe('PORT', () => {
+  const parse = (value?: string) => envSchema.safeParse({ PORT: value });
+
+  it('defaults to 3000 and reads a port number', () => {
+    expect(parse().data?.PORT).toBe(3000);
+    expect(parse('8080').data?.PORT).toBe(8080);
+  });
+
+  it('refuses values that are not a port', () => {
+    for (const value of ['0', '3000.5', '65536', '-1', 'abc']) {
+      expect(parse(value).success, value).toBe(false);
+    }
+  });
+});
