@@ -10,7 +10,7 @@ Scaffold a production-ready **Node.js + TypeScript + Express** API with a single
 npx create-api-starterkit my-api
 ```
 
-Answer two questions, or add `--yes` to take the defaults. Requires Node.js 22.12 or later.
+Answer a few questions, or add `--yes` to take the defaults. Requires Node.js 22.12 or later.
 
 ## What You Get
 
@@ -27,6 +27,7 @@ A fully configured API project with:
 - 🎨 **ESLint + Prettier** — consistent code style
 - 🪝 **Husky + lint-staged** — git hooks for quality
 - 🚦 **Rate limiting** (optional) — [Gatekeeper](https://github.com/SibilSoren/gatekeeper), 100 requests a minute per IP by default. Behind a load balancer, set `TRUST_PROXY` in the generated project.
+- 🗄️ **PostgreSQL + Drizzle** (optional) — a users module with migrations, seed data, docker-compose Postgres, and tests on an in-memory Postgres ([PGlite](https://pglite.dev))
 
 ## Quick Start
 
@@ -54,6 +55,7 @@ npx create-api-starterkit <project-name> [options]
 |---|---|---|
 | `-y, --yes` | Skip the questions and use the defaults | asks |
 | `--gatekeeper` / `--no-gatekeeper` | Add or skip Gatekeeper rate limiting | add |
+| `--db <db>` | `none`, or `drizzle` for PostgreSQL with Drizzle ORM | `none` |
 | `--package-manager <pm>` | Use `npm` or `pnpm` | `npm` |
 | `--skip-install` | Skip dependency installation | `false` |
 | `--no-git` | Skip git initialization | `false` |

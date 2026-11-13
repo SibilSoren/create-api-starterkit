@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>create-api-starterkit — Scaffold Production-Ready APIs in Seconds</title>
-  <meta name="description" content="One command to scaffold a production-ready Node.js + TypeScript + Express API. Two questions, or --yes for the defaults." />
+  <meta name="description" content="One command to scaffold a production-ready Node.js + TypeScript + Express API. A few questions, or --yes for the defaults." />
   <meta name="keywords" content="nodejs, typescript, express, api, scaffolding, cli, boilerplate, starter, template" />
   <meta name="author" content="SibilSoren" />
 
@@ -54,7 +54,7 @@
         <span class="hero-gradient">in seconds.</span>
       </h1>
       <p class="hero-subtitle animate-in delay-2">
-        One command. Two questions, or <code>--yes</code> for the defaults.<br />
+        One command. A few questions, or <code>--yes</code> for the defaults.<br />
         A fully configured Node.js + TypeScript + Express API — ready to build on.
       </p>
       <div class="hero-terminal animate-in delay-3">
@@ -202,6 +202,10 @@
           <div class="option-row">
             <code>--no-gatekeeper</code>
             <span>Skip Gatekeeper rate limiting (added by default)</span>
+          </div>
+          <div class="option-row">
+            <code>--db drizzle</code>
+            <span>Add PostgreSQL with Drizzle ORM (no database by default)</span>
           </div>
           <div class="option-row">
             <code>--skip-install</code>
