@@ -94,6 +94,7 @@ Copy `.env.example` to `.env` and configure:
 | `HOST` | `0.0.0.0` | Server host |
 | `LOG_LEVEL` | `info` | Pino log level |
 | `CORS_ORIGIN` | `*` | Allowed origins: `*` or a comma-separated list. Set it in production. |
+| `TRUST_PROXY` | `0` | Proxies in front of the app: a hop count, or their addresses and subnets. See [Behind a load balancer](#behind-a-load-balancer). |
 
 ## Docker
 
@@ -105,6 +106,12 @@ docker compose up --build
 docker build -t {{PROJECT_NAME}} .
 docker run -p 3000:3000 {{PROJECT_NAME}}
 ```
+
+## Behind a load balancer
+
+Most hosting platforms, cloud load balancers and Kubernetes ingresses put a proxy in front of your app. Without `TRUST_PROXY`, `req.ip` is the proxy's address, so every client looks the same and rate limiting counts them all together.
+
+Set `TRUST_PROXY=1` for one proxy, and add one for each extra proxy in front of it, such as a CDN. You can also list the proxies' addresses or subnets instead, for example `TRUST_PROXY=loopback,10.0.0.0/8`. `true` isn't accepted, because it would let any client choose its own IP by sending an `X-Forwarded-For` header.
 
 ## Tech Stack
 

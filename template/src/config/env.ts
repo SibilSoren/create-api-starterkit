@@ -13,7 +13,7 @@ try {
  * The app will crash immediately at startup with a clear error message
  * if any required env vars are missing or invalid.
  */
-const envSchema = z.object({
+export const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
@@ -33,6 +33,23 @@ const envSchema = z.object({
     .transform((value) =>
       value === '*' ? '*' : value.split(',').map((origin) => origin.trim()),
     ),
+
+  // The proxies in front of the app, such as a load balancer or a CDN. Express
+  // reads the client's IP from X-Forwarded-For through them, and rate limiting
+  // counts requests by that IP. Use a hop count (1 for one load balancer) or
+  // the proxies' addresses and subnets. 0 means there's no proxy.
+  TRUST_PROXY: z
+    .string()
+    .default('0')
+    .refine(
+      (value) => value.trim().toLowerCase() !== 'true',
+      'true would let any client choose its own IP. Use a hop count such as 1, or the proxy addresses.',
+    )
+    .transform((value) => {
+      const trimmed = value.trim();
+      if (trimmed === '' || trimmed.toLowerCase() === 'false') return 0;
+      return /^\d+$/.test(trimmed) ? Number(trimmed) : trimmed;
+    }),
 });
 
 export type Env = z.infer<typeof envSchema>;

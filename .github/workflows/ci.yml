@@ -108,7 +108,7 @@ jobs:
       - name: Boot the production build and check it
         working-directory: test-api
         run: |
-          NODE_ENV=production node dist/server.js &
+          NODE_ENV=production TRUST_PROXY=1 node dist/server.js &
           for i in $(seq 1 30); do curl -sf http://localhost:3000/api/health > /dev/null && break; sleep 1; done
 
           curl -sf http://localhost:3000/api/health | tee health.json
@@ -125,6 +125,14 @@ jobs:
           # Rate limit headers only when Gatekeeper was chosen.
           if [ "${{ matrix.features }}" = "--gatekeeper" ]; then
             curl -sI http://localhost:3000/api/health | grep -qi '^x-ratelimit-limit: 100'
+
+            # Behind a proxy (TRUST_PROXY=1), each client has its own limit.
+            # One client goes over it, and a second one still gets through.
+            for i in $(seq 1 100); do
+              curl -s -o /dev/null -H 'X-Forwarded-For: 198.51.100.1' http://localhost:3000/api/nonexistent
+            done
+            test "$(curl -s -o /dev/null -w '%{http_code}' -H 'X-Forwarded-For: 198.51.100.1' http://localhost:3000/api/nonexistent)" = "429"
+            test "$(curl -s -o /dev/null -w '%{http_code}' -H 'X-Forwarded-For: 198.51.100.2' http://localhost:3000/api/nonexistent)" = "404"
           else
             ! curl -sI http://localhost:3000/api/health | grep -qi '^x-ratelimit-limit'
           fi

@@ -9,7 +9,8 @@ const MIDDLEWARE_ANCHOR =
 
 const MIDDLEWARE = `
   // ─── Rate Limiting ────────────────────────────────────────
-  // 100 requests per minute per client IP, counted in memory. Running more
+  // 100 requests per minute per client IP, counted in memory. Behind a load
+  // balancer, set TRUST_PROXY, or every client shares one limit. Running more
   // than one server? Share the count with a RedisStore:
   // https://github.com/SibilSoren/gatekeeper#redis-store-distributed
   app.use(gatekeeper({ limit: 100, window: '1m' }));
