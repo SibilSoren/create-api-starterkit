@@ -16,6 +16,11 @@ import { healthRoutes } from './modules/health/health.routes.js';
 export function createApp(): express.Application {
   const app = express();
 
+  // ─── Proxies ──────────────────────────────────────────────
+  // Behind a load balancer, TRUST_PROXY makes req.ip the client's address
+  // instead of the load balancer's.
+  app.set('trust proxy', env.TRUST_PROXY);
+
   // ─── Security ─────────────────────────────────────────────
   app.use(helmet());
   app.use(
