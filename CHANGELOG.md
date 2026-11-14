@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The Docker healthcheck works. It called `localhost`, which can resolve to IPv6 first inside the Alpine image while the server listens on IPv4, so containers never became healthy. It now calls `127.0.0.1`.
+
 ### Added
 
 - PostgreSQL with Drizzle ORM: `--db drizzle`, or pick it in the setup questions. The project gets a users module that keeps all its queries in one repository file, a first migration, a `db:seed` script with sample users, Postgres in docker-compose, and tests on an in-memory Postgres ([PGlite](https://pglite.dev)), so tests don't need a database. On shutdown, the server closes its database connections after the last request.
