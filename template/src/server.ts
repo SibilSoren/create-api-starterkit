@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './utils/logger.js';
+// @slot imports
 
 const app = createApp();
 
@@ -22,8 +23,9 @@ const server = app.listen(env.PORT, env.HOST, () => {
 function gracefulShutdown(signal: string): void {
   logger.info(`${signal} received. Starting graceful shutdown...`);
 
-  server.close(() => {
+  server.close(async () => {
     logger.info('HTTP server closed.');
+    // @slot shutdown
     process.exit(0);
   });
 

@@ -160,6 +160,11 @@ export async function createProject(options: CreateOptions): Promise<void> {
   if (skipInstall) {
     console.log(chalk.cyan(`    ${installCmd}`));
   }
+  if (options.database === 'drizzle') {
+    console.log(chalk.cyan('    docker compose up -d db'));
+    console.log(chalk.cyan(`    ${runCommand(packageManager, 'db:migrate')}`));
+    console.log(chalk.cyan(`    ${runCommand(packageManager, 'db:seed')}`));
+  }
   console.log(chalk.cyan(`    ${runCommand(packageManager, 'dev')}`));
   log.blank();
   console.log(
@@ -171,6 +176,11 @@ export async function createProject(options: CreateOptions): Promise<void> {
   console.log(
     `  ${chalk.dim('Health:')}       http://localhost:3000/api/health`,
   );
+  if (options.database === 'drizzle') {
+    console.log(
+      `  ${chalk.dim('Users:')}        http://localhost:3000/api/users`,
+    );
+  }
   log.blank();
   console.log(chalk.dim('  Happy coding! 🚀'));
   log.blank();

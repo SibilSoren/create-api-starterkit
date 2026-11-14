@@ -20,6 +20,7 @@ The server will start at `http://localhost:3000`.
 |---|---|---|
 | `/api/health` | GET | Health check |
 | `/api-docs` | GET | Swagger UI documentation |
+<!-- @slot endpoints -->
 
 ## Scripts
 
@@ -36,6 +37,7 @@ The server will start at `http://localhost:3000`.
 | `npm run lint:fix` | Fix ESLint issues |
 | `npm run format` | Format code with Prettier |
 | `npm run format:check` | Check formatting without changing files |
+<!-- @slot scripts -->
 
 A pre-commit hook (husky + lint-staged) runs ESLint and Prettier on the files you commit.
 
@@ -95,7 +97,9 @@ Copy `.env.example` to `.env` and configure:
 | `LOG_LEVEL` | `info` | Pino log level |
 | `CORS_ORIGIN` | `*` | Allowed origins: `*` or a comma-separated list. Set it in production. |
 | `TRUST_PROXY` | `0` | Proxies in front of the app: a hop count, or their addresses and subnets. See [Behind a load balancer](#behind-a-load-balancer). |
+<!-- @slot env -->
 
+<!-- @slot sections -->
 ## Docker
 
 ```bash
@@ -124,6 +128,7 @@ Set `TRUST_PROXY=1` for one proxy, and add one for each extra proxy in front of 
 - **Logging**: Pino
 - **Linting**: ESLint + Prettier
 - **Security**: Helmet + CORS
+<!-- @slot tech-stack -->
 
 ## License
 

@@ -50,6 +50,7 @@ export const envSchema = z.object({
       if (trimmed === '' || trimmed.toLowerCase() === 'false') return 0;
       return /^\d+$/.test(trimmed) ? Number(trimmed) : trimmed;
     }),
+  // @slot env
 });
 
 export type Env = z.infer<typeof envSchema>;

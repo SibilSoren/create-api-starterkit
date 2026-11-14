@@ -37,6 +37,7 @@ async function scaffold(overrides: Partial<CreateOptions> = {}) {
     noGit: true,
     packageManager: 'npm',
     includeGatekeeper: false,
+    database: 'none',
     cwd: workDir,
     ...overrides,
   };
@@ -63,7 +64,7 @@ describe('createProject: no extras', () => {
     expect(project.read('src/app.ts')).toBe(
       withoutSlots(templateFile('src/app.ts')),
     );
-    expect(project.read('Dockerfile')).toBe(templateFile('Dockerfile'));
+    expect(project.read('Dockerfile')).toBe(withoutSlots(templateFile('Dockerfile')));
     expect(project.pkg.dependencies).toEqual(
       JSON.parse(templateFile('package.json')).dependencies,
     );
@@ -74,7 +75,7 @@ describe('createProject: no extras', () => {
 
     expect(project.exists('.gitignore')).toBe(true);
     expect(project.exists('_gitignore')).toBe(false);
-    expect(project.read('.env')).toBe(templateFile('.env.example'));
+    expect(project.read('.env')).toBe(withoutSlots(templateFile('.env.example')));
     expect(project.read('.husky/pre-commit')).toContain('lint-staged');
   });
 
@@ -88,12 +89,14 @@ describe('createProject: no extras', () => {
 
 describe('createProject: every combination', () => {
   it.each([
-    { packageManager: 'npm', includeGatekeeper: false },
-    { packageManager: 'npm', includeGatekeeper: true },
-    { packageManager: 'pnpm', includeGatekeeper: false },
-    { packageManager: 'pnpm', includeGatekeeper: true },
+    { packageManager: 'npm', includeGatekeeper: false, database: 'none' },
+    { packageManager: 'npm', includeGatekeeper: true, database: 'none' },
+    { packageManager: 'pnpm', includeGatekeeper: false, database: 'none' },
+    { packageManager: 'pnpm', includeGatekeeper: true, database: 'none' },
+    { packageManager: 'npm', includeGatekeeper: true, database: 'drizzle' },
+    { packageManager: 'pnpm', includeGatekeeper: false, database: 'drizzle' },
   ] as const)(
-    'leaves no placeholder or slot line ($packageManager, gatekeeper: $includeGatekeeper)',
+    'leaves no placeholder or slot line ($packageManager, gatekeeper: $includeGatekeeper, db: $database)',
     async (overrides) => {
       const project = await scaffold(overrides);
 
@@ -122,10 +125,58 @@ describe('createProject: --gatekeeper', () => {
   it('changes nothing else', async () => {
     const project = await scaffold({ includeGatekeeper: true });
 
-    expect(project.read('Dockerfile')).toBe(templateFile('Dockerfile'));
+    expect(project.read('Dockerfile')).toBe(withoutSlots(templateFile('Dockerfile')));
     expect(project.read('README.md')).toBe(
-      templateFile('README.md').replaceAll('{{PROJECT_NAME}}', 'my-api'),
+      withoutSlots(templateFile('README.md')).replaceAll('{{PROJECT_NAME}}', 'my-api'),
     );
+  });
+});
+
+describe('createProject: --db drizzle', () => {
+  it('adds Drizzle, the users module, migrations and database settings', async () => {
+    const project = await scaffold({ database: 'drizzle' });
+
+    expect(Object.keys(project.pkg.dependencies)).toEqual(
+      expect.arrayContaining(['drizzle-orm', 'pg']),
+    );
+    expect(project.pkg.scripts['db:migrate']).toBe('tsx src/db/migrate.ts');
+    for (const file of [
+      'drizzle.config.ts',
+      'drizzle/0000_init.sql',
+      'drizzle/meta/_journal.json',
+      'src/db/client.ts',
+      'src/db/seed.ts',
+      'src/modules/users/users.repository.ts',
+      'tests/helpers/test-db.ts',
+      'tests/modules/users/users.test.ts',
+    ]) {
+      expect(project.exists(file), file).toBe(true);
+    }
+    expect(project.read('src/app.ts')).toContain("app.use('/api/users', userRoutes);");
+    expect(project.read('src/server.ts')).toContain('await closeDb();');
+    expect(project.read('src/config/env.ts')).toContain('DATABASE_URL: z.url(),');
+    expect(project.read('.env')).toContain('DATABASE_URL=postgres://');
+    expect(project.read('docker-compose.yml')).toContain('condition: service_healthy');
+    expect(project.read('Dockerfile')).toContain('COPY drizzle ./drizzle');
+  });
+
+  it('works together with pnpm and Gatekeeper', async () => {
+    const project = await scaffold({
+      database: 'drizzle',
+      packageManager: 'pnpm',
+      includeGatekeeper: true,
+    });
+    const appTs = project.read('src/app.ts');
+
+    expect(appTs).toContain("import { gatekeeper } from '@sibilsoren/gatekeeper';");
+    expect(appTs).toContain("import { userRoutes } from './modules/users/users.routes.js';");
+    // Users are rate limited like any other route.
+    expect(appTs.indexOf('app.use(gatekeeper(')).toBeLessThan(
+      appTs.indexOf("app.use('/api/users'"),
+    );
+    expect(project.read('Dockerfile')).toContain('pnpm install --frozen-lockfile --prod');
+    expect(project.read('Dockerfile')).toContain('COPY drizzle ./drizzle');
+    expect(project.read('README.md')).toContain('pnpm db:migrate');
   });
 });
 
