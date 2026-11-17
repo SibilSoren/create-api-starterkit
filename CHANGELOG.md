@@ -7,9 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-17
+
+### Fixed
+
+- The Docker healthcheck works. It called `localhost`, which can resolve to IPv6 first in the Alpine image while the app listens on IPv4, so the container never became healthy, and a docker compose service waiting for it never started.
+- A scoped name such as `@acme/api` creates the project in `./api` instead of `./@acme/api`. `package.json` keeps the full name, and the README's Docker commands use `api`, because Docker image names can't contain `@`.
+- The spinner turns while dependencies install. It froze on its first frame until the install finished.
+- When installing dependencies fails, the CLI says the dependencies aren't installed, shows how to finish, and exits with 1. It used to say "Your API is ready!" and exit with 0. An install stopped after 5 minutes now says so.
+- The CLI no longer hangs on a terminal that reports no width, such as `docker run -t` started from a script.
+
 ### Changed
 
-- Options such as Gatekeeper add their code through named slots in the template, each described in one file, instead of find-and-replace on exact lines. Generated projects are byte-for-byte the same. "Adding an Option" in CONTRIBUTING.md explains how it works.
+- Options such as Gatekeeper add their code through named slots in the template, each described in one file, instead of find-and-replace on exact lines. On its own, this leaves generated projects byte-for-byte the same. "Adding an Option" in CONTRIBUTING.md explains how it works.
 
 ## [1.1.1] - 2026-11-13
 
