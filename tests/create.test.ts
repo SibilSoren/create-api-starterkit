@@ -28,6 +28,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   fs.rmSync(workDir, { recursive: true, force: true });
 });
 
@@ -55,6 +56,19 @@ function printed(): string {
   return stripVTControlCharacters(
     vi.mocked(console.log).mock.calls.map((args) => args.join(' ')).join('\n'),
   );
+}
+
+/**
+ * Put a fake npm first on PATH, running the given shell script instead of
+ * a real install.
+ */
+function fakeNpm(script: string) {
+  const bin = path.join(workDir, 'bin');
+  fs.mkdirSync(bin, { recursive: true });
+  fs.writeFileSync(path.join(bin, 'npm'), `#!/bin/sh\n${script}\n`, { mode: 0o755 });
+  vi.stubEnv('PATH', `${bin}${path.delimiter}${process.env.PATH}`);
+  // ora writes the spinner to stderr.
+  vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 }
 
 function allFiles(dir: string): string[] {
@@ -157,6 +171,20 @@ describe('createProject: scoped names', () => {
     expect(project.read('README.md')).toContain('docker build -t api .');
     expect(project.read('README.md')).toContain('docker run -p 3000:3000 api');
     expect(project.read('README.md')).toMatch(/^# @acme\/api$/m);
+  });
+});
+
+describe('createProject: installing dependencies', () => {
+  it("doesn't block while installing, so the spinner keeps turning", async () => {
+    fakeNpm('sleep 0.5');
+    let ticks = 0;
+    const timer = setInterval(() => ticks++, 20);
+
+    await scaffold({ skipInstall: false });
+    clearInterval(timer);
+
+    expect(ticks).toBeGreaterThan(5);
+    expect(printed()).toContain('Your API is ready!');
   });
 });
 
