@@ -35,6 +35,7 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy built files from builder
 COPY --from=builder /app/dist ./dist
+# @slot production-files
 
 # Switch to non-root user
 USER appuser

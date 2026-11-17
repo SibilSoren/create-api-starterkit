@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- PostgreSQL with Drizzle ORM: `--db drizzle`, or pick it in the setup questions. The project gets a users module that keeps all its queries in one repository file, a first migration, a `db:seed` script with sample users, Postgres in docker-compose, and tests on an in-memory Postgres ([PGlite](https://pglite.dev)), so tests don't need a database. On shutdown, the server closes its database connections after the last request.
+
+### Changed
+
+- Projects without a database are the same as before, apart from two small changes: the shutdown callback in `src/server.ts` is `async`, and `tests/config/env.test.ts` checks each variable on its own.
+
 ## [1.1.2] - 2026-11-17
 
 ### Fixed

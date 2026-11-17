@@ -47,6 +47,7 @@ export function createApp(): express.Application {
 
   // ─── API Documentation ────────────────────────────────────
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  // @slot routes
 
   // ─── Add your routes here ─────────────────────────────────
   // app.use('/api/users', userRoutes);
