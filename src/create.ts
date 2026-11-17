@@ -127,6 +127,9 @@ export async function createProject(options: CreateOptions): Promise<boolean> {
     const spinner = ora({
       text: `Installing dependencies with ${packageManager}...`,
       prefixText: chalk.blue(`[${currentStep}/${totalSteps}]`),
+      // ora clears lines forever on a terminal that reports 0 columns, such as
+      // `docker run -t` started from a script. Print plain lines there.
+      isEnabled: process.stderr.columns === 0 ? false : undefined,
     }).start();
 
     try {
