@@ -25,9 +25,10 @@ const INSTALL_TIMEOUT = 5 * 60_000;
 
 /**
  * Main scaffolding function.
- * Creates a new API project from the template.
+ * Creates a new API project from the template. Returns false if the project
+ * was created but installing its dependencies failed.
  */
-export async function createProject(options: CreateOptions): Promise<void> {
+export async function createProject(options: CreateOptions): Promise<boolean> {
   const { projectName, skipInstall, noGit, packageManager } = options;
   const totalSteps = 2 + (noGit ? 0 : 1) + (skipInstall ? 0 : 1);
   let currentStep = 0;
@@ -120,6 +121,7 @@ export async function createProject(options: CreateOptions): Promise<void> {
 
   // ─── Step 4: Install dependencies ───────────────────────
   const installCmd = installCommand(packageManager);
+  let installFailed = false;
   if (!skipInstall) {
     currentStep++;
     const spinner = ora({
@@ -137,7 +139,7 @@ export async function createProject(options: CreateOptions): Promise<void> {
     } catch (error) {
       spinner.fail('Failed to install dependencies');
       printCommandOutput(error);
-      log.warning(`Fix the error above, then run "${installCmd}" in the project directory.`);
+      installFailed = true;
     }
   }
 
@@ -160,16 +162,27 @@ export async function createProject(options: CreateOptions): Promise<void> {
 
   // ─── Done! ──────────────────────────────────────────────
   log.blank();
-  console.log(chalk.green.bold('  ✨ Your API is ready!'));
-  log.blank();
-  console.log('  Next steps:');
+  if (installFailed) {
+    console.log(
+      chalk.red.bold(`  ✖ ${dirName} is created, but its dependencies aren't installed.`),
+    );
+    log.blank();
+    console.log('  Fix the error above, then finish with:');
+  } else {
+    console.log(chalk.green.bold('  ✨ Your API is ready!'));
+    log.blank();
+    console.log('  Next steps:');
+  }
   log.blank();
   console.log(chalk.cyan(`    cd ${dirName}`));
-  if (skipInstall) {
+  if (skipInstall || installFailed) {
     console.log(chalk.cyan(`    ${installCmd}`));
   }
   console.log(chalk.cyan(`    ${runCommand(packageManager, 'dev')}`));
   log.blank();
+  if (installFailed) {
+    return false;
+  }
   console.log(
     `  ${chalk.dim('Server:')}       http://localhost:3000`,
   );
@@ -182,6 +195,7 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.blank();
   console.log(chalk.dim('  Happy coding! 🚀'));
   log.blank();
+  return true;
 }
 
 /**
