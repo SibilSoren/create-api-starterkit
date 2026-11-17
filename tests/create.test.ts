@@ -201,6 +201,41 @@ describe('createProject: installing dependencies', () => {
     // The files are all there, so the install is all that's left to do.
     expect(project.exists('src/app.ts')).toBe(true);
   });
+
+  it("doesn't hang on a terminal that reports no width", async () => {
+    // A terminal with no size, e.g. `docker run -t` started from a script,
+    // reports 0 columns. The spinner used to clear lines forever there.
+    fakeNpm('sleep 0.3');
+    vi.stubEnv('CI', undefined);
+    vi.stubEnv('TERM', 'xterm-256color');
+    let cleared = 0;
+    const terminal = {
+      isTTY: true,
+      columns: 0,
+      cursorTo: () => true,
+      moveCursor: () => true,
+      clearLine: () => {
+        // Fail instead of hanging the test run.
+        if (++cleared > 10_000) throw new Error('The spinner kept clearing lines');
+        return true;
+      },
+    };
+    const saved = Object.getOwnPropertyDescriptors(process.stderr);
+    for (const [key, value] of Object.entries(terminal)) {
+      Object.defineProperty(process.stderr, key, { value, configurable: true, writable: true });
+    }
+
+    try {
+      const project = await scaffold({ skipInstall: false });
+      expect(project.ready).toBe(true);
+    } finally {
+      for (const key of Object.keys(terminal)) {
+        const descriptor = saved[key as keyof typeof saved];
+        if (descriptor) Object.defineProperty(process.stderr, key, descriptor);
+        else delete (process.stderr as unknown as Record<string, unknown>)[key];
+      }
+    }
+  });
 });
 
 describe('createProject: --package-manager pnpm', () => {
