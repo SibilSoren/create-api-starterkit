@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import ora from 'ora';
 import chalk from 'chalk';
 import type { CreateOptions } from './types.js';
+import { CommandError, execAsync } from './utils/exec.js';
 import { isDirEmpty } from './utils/fs.js';
 import { log } from './utils/logger.js';
 import { validateProjectName } from './utils/validate.js';
@@ -19,6 +20,8 @@ import { selectFeatures } from './features/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const INSTALL_TIMEOUT = 5 * 60_000;
 
 /**
  * Main scaffolding function.
@@ -125,10 +128,10 @@ export async function createProject(options: CreateOptions): Promise<void> {
     }).start();
 
     try {
-      execSync(installCmd, {
+      // Not execSync: it would block the spinner until the install finished.
+      await execAsync(packageManager, ['install'], {
         cwd: targetDir,
-        stdio: 'pipe',
-        timeout: 300_000, // 5 minute timeout
+        timeout: INSTALL_TIMEOUT,
       });
       spinner.succeed('Dependencies installed');
     } catch (error) {
@@ -195,8 +198,14 @@ function directoryName(projectName: string): string {
  * Print the tail of a failed command's output, so the user sees why it failed.
  */
 function printCommandOutput(error: unknown): void {
-  const { stdout, stderr } = error as { stdout?: Buffer; stderr?: Buffer };
-  const output = `${stdout?.toString() ?? ''}\n${stderr?.toString() ?? ''}`
+  let text: string;
+  if (error instanceof CommandError) {
+    text = `${error.output}\n${error.message}`;
+  } else {
+    const { stdout, stderr } = error as { stdout?: Buffer; stderr?: Buffer };
+    text = `${stdout?.toString() ?? ''}\n${stderr?.toString() ?? ''}`;
+  }
+  const output = text
     .split('\n')
     .filter((line) => line.trim() !== '')
     .slice(-15);
