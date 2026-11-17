@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { stripVTControlCharacters } from 'node:util';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fillSlots } from '../src/compose/slots.js';
 import { createProject } from '../src/create.js';
@@ -42,10 +43,18 @@ async function scaffold(overrides: Partial<CreateOptions> = {}) {
   };
   await createProject(options);
 
-  const dir = path.join(workDir, options.projectName);
+  // A scoped name such as @acme/api goes in a folder named api.
+  const dir = path.join(workDir, path.basename(options.projectName));
   const read = (name: string) => fs.readFileSync(path.join(dir, name), 'utf-8');
   const exists = (name: string) => fs.existsSync(path.join(dir, name));
   return { dir, read, exists, pkg: JSON.parse(read('package.json')) };
+}
+
+/** Everything createProject printed, without colors. */
+function printed(): string {
+  return stripVTControlCharacters(
+    vi.mocked(console.log).mock.calls.map((args) => args.join(' ')).join('\n'),
+  );
 }
 
 function allFiles(dir: string): string[] {
@@ -99,7 +108,7 @@ describe('createProject: every combination', () => {
 
       for (const file of allFiles(project.dir)) {
         const content = fs.readFileSync(file, 'utf-8');
-        expect(content, file).not.toContain('{{PROJECT_NAME}}');
+        expect(content, file).not.toMatch(/\{\{[A-Z_]+\}\}/);
         expect(content, file).not.toMatch(/@slot\b/);
       }
     },
@@ -124,8 +133,30 @@ describe('createProject: --gatekeeper', () => {
 
     expect(project.read('Dockerfile')).toBe(templateFile('Dockerfile'));
     expect(project.read('README.md')).toBe(
-      templateFile('README.md').replaceAll('{{PROJECT_NAME}}', 'my-api'),
+      templateFile('README.md')
+        .replaceAll('{{PROJECT_NAME}}', 'my-api')
+        .replaceAll('{{IMAGE_NAME}}', 'my-api'),
     );
+  });
+});
+
+describe('createProject: scoped names', () => {
+  it('creates the project in a folder named without the scope', async () => {
+    const project = await scaffold({ projectName: '@acme/api' });
+
+    expect(project.dir).toBe(path.join(workDir, 'api'));
+    expect(fs.existsSync(path.join(workDir, '@acme'))).toBe(false);
+    expect(project.pkg.name).toBe('@acme/api');
+    expect(printed()).toContain('cd api\n');
+  });
+
+  it('names the Docker image after the folder', async () => {
+    const project = await scaffold({ projectName: '@acme/api' });
+
+    // Docker image names can't contain "@".
+    expect(project.read('README.md')).toContain('docker build -t api .');
+    expect(project.read('README.md')).toContain('docker run -p 3000:3000 api');
+    expect(project.read('README.md')).toMatch(/^# @acme\/api$/m);
   });
 });
 

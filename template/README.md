@@ -103,8 +103,8 @@ Copy `.env.example` to `.env` and configure:
 docker compose up --build
 
 # Or build directly
-docker build -t {{PROJECT_NAME}} .
-docker run -p 3000:3000 {{PROJECT_NAME}}
+docker build -t {{IMAGE_NAME}} .
+docker run -p 3000:3000 {{IMAGE_NAME}}
 ```
 
 ## Behind a load balancer

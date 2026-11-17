@@ -60,6 +60,8 @@ npx create-api-starterkit <project-name> [options]
 
 Any option you pass on the command line isn't asked again. In CI (when `CI` is set), it never asks.
 
+A scoped name such as `@acme/api` is created in a folder named `api`, and `package.json` keeps the full name.
+
 ## Generated Project Structure
 
 ```
