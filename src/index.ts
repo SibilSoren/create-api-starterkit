@@ -46,7 +46,9 @@ program
         packageManager: isPackageManager(opts.packageManager) ? opts.packageManager : 'npm',
         includeGatekeeper: (opts.gatekeeper as boolean | undefined) ?? true,
       };
-      await createProject(options);
+      if (!(await createProject(options))) {
+        process.exitCode = 1;
+      }
       return;
     }
 
@@ -96,7 +98,10 @@ program
       includeGatekeeper: project.includeGatekeeper as boolean,
     };
 
-    await createProject(options);
+    if (!(await createProject(options))) {
+      process.exitCode = 1;
+      return;
+    }
 
     p.outro(chalk.green('Done!'));
   });

@@ -42,13 +42,13 @@ async function scaffold(overrides: Partial<CreateOptions> = {}) {
     cwd: workDir,
     ...overrides,
   };
-  await createProject(options);
+  const ready = await createProject(options);
 
   // A scoped name such as @acme/api goes in a folder named api.
   const dir = path.join(workDir, path.basename(options.projectName));
   const read = (name: string) => fs.readFileSync(path.join(dir, name), 'utf-8');
   const exists = (name: string) => fs.existsSync(path.join(dir, name));
-  return { dir, read, exists, pkg: JSON.parse(read('package.json')) };
+  return { ready, dir, read, exists, pkg: JSON.parse(read('package.json')) };
 }
 
 /** Everything createProject printed, without colors. */
@@ -180,11 +180,26 @@ describe('createProject: installing dependencies', () => {
     let ticks = 0;
     const timer = setInterval(() => ticks++, 20);
 
-    await scaffold({ skipInstall: false });
+    const project = await scaffold({ skipInstall: false });
     clearInterval(timer);
 
+    expect(project.ready).toBe(true);
     expect(ticks).toBeGreaterThan(5);
     expect(printed()).toContain('Your API is ready!');
+  });
+
+  it("says the project isn't ready when the install fails", async () => {
+    fakeNpm('echo "npm error 404 Not Found - @sibilsoren/nope" >&2\nexit 1');
+
+    const project = await scaffold({ skipInstall: false });
+
+    expect(project.ready).toBe(false);
+    const output = printed();
+    expect(output).not.toContain('Your API is ready!');
+    expect(output).toContain('npm error 404 Not Found');
+    expect(output).toMatch(/cd my-api\n\s+npm install\n\s+npm run dev/);
+    // The files are all there, so the install is all that's left to do.
+    expect(project.exists('src/app.ts')).toBe(true);
   });
 });
 
