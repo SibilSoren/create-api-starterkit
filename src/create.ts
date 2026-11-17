@@ -37,10 +37,11 @@ export async function createProject(options: CreateOptions): Promise<void> {
   }
 
   // ─── Check target directory ─────────────────────────────
-  const targetDir = path.resolve(options.cwd ?? process.cwd(), projectName);
+  const dirName = directoryName(projectName);
+  const targetDir = path.resolve(options.cwd ?? process.cwd(), dirName);
 
   if (!isDirEmpty(targetDir)) {
-    log.error(`Directory "${projectName}" already exists and is not empty.`);
+    log.error(`Directory "${dirName}" already exists and is not empty.`);
     process.exit(1);
   }
 
@@ -72,7 +73,11 @@ export async function createProject(options: CreateOptions): Promise<void> {
     featuresDir: path.resolve(resolvedTemplateDir, '..', 'features'),
     targetDir,
     features: selectFeatures(options),
-    replacements: { '{{PROJECT_NAME}}': projectName },
+    replacements: {
+      '{{PROJECT_NAME}}': projectName,
+      // Docker image names can't contain "@", so they use the folder's name.
+      '{{IMAGE_NAME}}': dirName,
+    },
   });
 
   if (packageManager === 'pnpm') {
@@ -156,7 +161,7 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.blank();
   console.log('  Next steps:');
   log.blank();
-  console.log(chalk.cyan(`    cd ${projectName}`));
+  console.log(chalk.cyan(`    cd ${dirName}`));
   if (skipInstall) {
     console.log(chalk.cyan(`    ${installCmd}`));
   }
@@ -174,6 +179,16 @@ export async function createProject(options: CreateOptions): Promise<void> {
   log.blank();
   console.log(chalk.dim('  Happy coding! 🚀'));
   log.blank();
+}
+
+/**
+ * The folder for a project: its name without the scope, so @acme/api goes in
+ * ./api rather than ./@acme/api.
+ */
+function directoryName(projectName: string): string {
+  return projectName.startsWith('@')
+    ? projectName.slice(projectName.indexOf('/') + 1)
+    : projectName;
 }
 
 /**
